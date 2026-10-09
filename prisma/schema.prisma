@@ -1,0 +1,801 @@
+// ORIGINX relational schema — PostgreSQL (Supabase in production, embedded Postgres for local dev/tests).
+// Enum-like columns are strings validated in the service layer (src/lib/constants.ts), which keeps
+// migrations simple when new values are added.
+//
+// DATABASE_URL: runtime connection. On Supabase use the pooled "transaction" connection string
+//               (port 6543) with ?pgbouncer=true&connection_limit=5
+// DIRECT_URL:   direct/session connection (port 5432) used by `prisma migrate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  fullName        String
+  platformRole    String    @default("NONE") // NONE | SUPER_ADMIN | PLATFORM_ADMIN | SUPPORT_ADMIN | COMPLIANCE_ADMIN
+  status          String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  emailVerifiedAt DateTime?
+  sessionVersion  Int       @default(0) // bumped to invalidate every access token of the user
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships        OrganizationMember[]
+  invitationsSent    Invitation[]         @relation("InvitationInviter")
+  refreshTokens      RefreshToken[]
+  oneTimeTokens      OneTimeToken[]
+  auditLogs          AuditLog[]
+  events             ProductEvent[]       @relation("EventActor")
+  incidentsCreated   Incident[]           @relation("IncidentCreator")
+  incidentsResolved  Incident[]           @relation("IncidentResolver")
+  recallsInitiated   Recall[]             @relation("RecallInitiator")
+  transfersRequested CustodyTransfer[]    @relation("TransferRequester")
+  transfersResponded CustodyTransfer[]    @relation("TransferResponder")
+
+  @@index([platformRole])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  familyId   String // rotation family, used for refresh-token reuse detection
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+/// Password-reset and email-verification tokens (only hashes are stored).
+model OneTimeToken {
+  id        String    @id @default(cuid())
+  userId    String
+  purpose   String // PASSWORD_RESET | EMAIL_VERIFICATION
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id                    String    @id @default(cuid())
+  name                  String
+  slug                  String    @unique
+  legalName             String?
+  organizationType      String // primary type: MANUFACTURER | DISTRIBUTOR | LOGISTICS | ...
+  additionalTypesJson   String    @default("[]") // organizations can play several supply-chain roles
+  industry              String?
+  country               String?
+  address               String?
+  contactEmail          String?
+  contactPhone          String?
+  website               String?
+  logo                  String?
+  status                String    @default("PENDING") // PENDING | ACTIVE | SUSPENDED | REJECTED
+  verificationStatus    String    @default("PENDING") // PENDING | VERIFIED | REJECTED | SUSPENDED
+  verifiedAt            DateTime?
+  subscriptionPlan      String    @default("FREE") // FREE | STARTER | GROWTH | ENTERPRISE
+  subscriptionStatus    String    @default("ACTIVE") // ACTIVE | TRIALING | PAST_DUE | CANCELLED
+  subscriptionStartedAt DateTime?
+  subscriptionExpiresAt DateTime?
+  productLimit          Int       @default(100)
+  userLimit             Int       @default(3)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  members              OrganizationMember[]
+  invitations          Invitation[]
+  products             Product[]
+  ownedProducts        Product[]                  @relation("CurrentOwner")
+  manufacturedProducts Product[]                  @relation("Manufacturer")
+  batches              ProductBatch[]
+  events               ProductEvent[]
+  incidents            Incident[]
+  recalls              Recall[]
+  relationshipsFrom    OrganizationRelationship[] @relation("RelSource")
+  relationshipsTo      OrganizationRelationship[] @relation("RelTarget")
+  transfersFrom        CustodyTransfer[]          @relation("TransferFrom")
+  transfersTo          CustodyTransfer[]          @relation("TransferTo")
+  auditLogs            AuditLog[]
+
+  @@index([status])
+  @@index([verificationStatus])
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String // ORG_OWNER | ORG_ADMIN | ORG_MANAGER | ORG_OPERATOR | ORG_VIEWER
+  status         String   @default("ACTIVE") // ACTIVE | REMOVED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Invitation {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String
+  role           String
+  tokenHash      String    @unique
+  status         String    @default("PENDING") // PENDING | ACCEPTED | REVOKED | EXPIRED
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitationInviter", fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model OrganizationRelationship {
+  id                   String    @id @default(cuid())
+  sourceOrganizationId String
+  targetOrganizationId String
+  relationshipType     String // SUPPLIER | DISTRIBUTOR | LOGISTICS_PROVIDER | WAREHOUSE | RETAILER | CUSTOMER | PARTNER
+  status               String    @default("REQUESTED") // REQUESTED | ACCEPTED | REJECTED | SUSPENDED
+  requestedById        String?
+  respondedById        String?
+  createdAt            DateTime  @default(now())
+  approvedAt           DateTime?
+  updatedAt            DateTime  @updatedAt
+
+  source Organization @relation("RelSource", fields: [sourceOrganizationId], references: [id], onDelete: Cascade)
+  target Organization @relation("RelTarget", fields: [targetOrganizationId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceOrganizationId, targetOrganizationId, relationshipType])
+  @@index([targetOrganizationId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Products & Digital Product Passport
+// ---------------------------------------------------------------------------
+
+model ProductBatch {
+  id                String    @id @default(cuid())
+  organizationId    String
+  batchCode         String
+  name              String?
+  manufacturedAt    DateTime?
+  expiryDate        DateTime?
+  // Inventory layer (additive)
+  skuId             String?
+  unitOfMeasure     String?
+  plannedQuantity   Decimal?  @db.Decimal(18, 4)
+  qualityStatus     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  holdStatus        String    @default("NONE") // NONE | QUARANTINED | RECALLED
+  passportProductId String?   @unique // Digital Product Passport representing the whole batch
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization  Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sku           ProductSku?        @relation(fields: [skuId], references: [id])
+  passport      Product?           @relation("BatchPassport", fields: [passportProductId], references: [id])
+  products      Product[]
+  recalls       Recall[]
+  balances      InventoryBalance[]
+  shipmentItems ShipmentItem[]
+
+  @@unique([organizationId, batchCode])
+  @@index([batchCode])
+}
+
+model Product {
+  id                         String    @id @default(cuid())
+  organizationId             String // registering (brand-owner) tenant
+  productCode                String // business "Product ID" (e.g. RX-29481); global identity is enforced via ProductIdentity
+  batchId                    String?
+  productName                String
+  category                   String?
+  description                String?
+  manufacturerId             String?
+  originCountry              String?
+  originLocation             String?
+  manufacturingDate          DateTime?
+  expiryDate                 DateTime?
+  serialNumber               String?
+  currentOwnerOrganizationId String? // current custodian
+  currentLocation            String?
+  status                     String    @default("ACTIVE") // ACTIVE | DELIVERED | RECALLED | SUSPENDED | ARCHIVED | QUARANTINED
+  trustScore                 Int       @default(0)
+  trustLevel                 String    @default("CAUTION")
+  trustScoreJson             String    @default("{}")
+  trustCalculatedAt          DateTime?
+  riskLevel                  String    @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
+  verificationStatus         String    @default("PENDING") // PENDING | REGISTERED | VERIFIED | POTENTIAL_COUNTERFEIT | COMPROMISED
+  authenticityStatus         String    @default("UNKNOWN") // AUTHENTIC | COUNTERFEIT | RECALLED | UNKNOWN
+  blockchainIdentity         String? // tx hash of the on-chain identity registration (never fabricated)
+  publicVerificationToken    String    @unique
+  skuId                      String? // catalogue item this passport belongs to (inventory layer)
+  passportType               String    @default("UNIT") // UNIT | BATCH
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sku             ProductSku?          @relation(fields: [skuId], references: [id])
+  batchPassportOf ProductBatch?        @relation("BatchPassport")
+  manufacturer    Organization?        @relation("Manufacturer", fields: [manufacturerId], references: [id])
+  currentOwner    Organization?        @relation("CurrentOwner", fields: [currentOwnerOrganizationId], references: [id])
+  batch           ProductBatch?        @relation(fields: [batchId], references: [id])
+  identity        ProductIdentity?
+  events          ProductEvent[]
+  proofs          BlockchainProof[]
+  incidents       Incident[]
+  recalls         Recall[]
+  transfers       CustodyTransfer[]
+  verifications   VerificationLog[]
+  trustHistory    TrustScoreSnapshot[]
+
+  @@index([productCode])
+  @@index([organizationId])
+  @@index([skuId])
+  @@index([batchId])
+  @@index([currentOwnerOrganizationId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProductIdentity {
+  id                    String   @id @default(cuid())
+  productId             String   @unique
+  canonicalIdentityHash String // SHA-256 of the normalized global identity key (productCode + serial)
+  identityHash          String   @unique // == canonical for the genuine registrant; derived for collision claims
+  isCanonical           Boolean  @default(true)
+  collidesWithProductId String? // set on a quarantined claim that collided with a registered identity
+  blockchainIdentity    String? // tx hash of the identity registration on-chain
+  status                String   @default("ACTIVE") // ACTIVE | SUSPENDED | RECALLED | COUNTERFEIT | REVOKED
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([canonicalIdentityHash])
+  @@index([status])
+}
+
+/// Append-only, hash-linked lifecycle events. Immutable columns are protected by DB triggers.
+model ProductEvent {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  productId           String
+  sequence            Int
+  eventType           String
+  actorUserId         String?
+  actorOrganizationId String?
+  timestamp           DateTime
+  location            String?
+  metadataJson        String   @default("{}")
+  previousEventHash   String
+  eventHash           String
+  blockchainProofId   String?
+  verificationStatus  String   @default("UNANCHORED") // UNANCHORED | PENDING_ANCHOR | ANCHORED
+  createdAt           DateTime @default(now())
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  actor        User?            @relation("EventActor", fields: [actorUserId], references: [id])
+  proof        BlockchainProof? @relation("EventProof", fields: [blockchainProofId], references: [id])
+
+  @@unique([productId, sequence])
+  @@index([organizationId])
+  @@index([eventHash])
+  @@index([createdAt])
+}
+
+model CustodyTransfer {
+  id                 String    @id @default(cuid())
+  productId          String
+  fromOrganizationId String
+  toOrganizationId   String
+  status             String    @default("TRANSFER_REQUESTED") // TRANSFER_REQUESTED | TRANSFER_ACCEPTED | TRANSFER_REJECTED | TRANSFER_CANCELLED
+  requestedByUserId  String?
+  respondedByUserId  String?
+  note               String?
+  receiptEventType   String? // lifecycle event type recorded on acceptance
+  custodyEventId     String?
+  shipmentId         String? // set when the transfer was opened by an inventory shipment
+  requestedAt        DateTime  @default(now())
+  respondedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  fromOrg     Organization @relation("TransferFrom", fields: [fromOrganizationId], references: [id])
+  toOrg       Organization @relation("TransferTo", fields: [toOrganizationId], references: [id])
+  requestedBy User?        @relation("TransferRequester", fields: [requestedByUserId], references: [id])
+  respondedBy User?        @relation("TransferResponder", fields: [respondedByUserId], references: [id])
+  shipment    Shipment?    @relation(fields: [shipmentId], references: [id])
+
+  @@index([productId])
+  @@index([shipmentId])
+  @@index([fromOrganizationId])
+  @@index([toOrganizationId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Blockchain proofs
+// ---------------------------------------------------------------------------
+
+model BlockchainProof {
+  id              String    @id @default(cuid())
+  productId       String
+  eventId         String?
+  kind            String // IDENTITY | EVENT | STATUS
+  network         String
+  chainId         Int?
+  contractAddress String?
+  transactionHash String? // only ever a real transaction hash returned by the chain
+  blockNumber     Int?
+  eventHash       String // the 32-byte value anchored (event hash, identity hash, or status digest)
+  identityHash    String?
+  statusCode      Int?
+  timestamp       DateTime // when the proof was requested
+  confirmedAt     DateTime?
+  status          String    @default("PENDING") // PENDING | CONFIRMED | FAILED
+  attempts        Int       @default(0)
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  events  ProductEvent[] @relation("EventProof")
+
+  @@index([productId])
+  @@index([eventId])
+  @@index([eventHash])
+  @@index([transactionHash])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Trust, incidents, recalls
+// ---------------------------------------------------------------------------
+
+model TrustScoreSnapshot {
+  id          String   @id @default(cuid())
+  productId   String
+  score       Int
+  level       String
+  reasonsJson String
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+}
+
+model Incident {
+  id             String    @id @default(cuid())
+  organizationId String
+  productId      String?
+  type           String
+  severity       String // LOW | MEDIUM | HIGH | CRITICAL
+  title          String
+  description    String
+  evidenceJson   String    @default("{}")
+  source         String    @default("MANUAL") // MANUAL | SYSTEM
+  detectedAt     DateTime  @default(now())
+  status         String    @default("OPEN") // OPEN | INVESTIGATING | RESOLVED | DISMISSED | RECALLED
+  affectedUnits  Int?
+  createdById    String?
+  resolvedById   String?
+  resolvedAt     DateTime?
+  resolutionNote String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  product      Product?     @relation(fields: [productId], references: [id])
+  createdBy    User?        @relation("IncidentCreator", fields: [createdById], references: [id])
+  resolvedBy   User?        @relation("IncidentResolver", fields: [resolvedById], references: [id])
+  recalls      Recall[]
+
+  @@index([organizationId])
+  @@index([productId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Recall {
+  id             String    @id @default(cuid())
+  organizationId String
+  productId      String?
+  batchId        String?
+  reason         String
+  incidentId     String?
+  affectedUnits  Int?
+  status         String    @default("DRAFT") // DRAFT | INITIATED | IN_PROGRESS | COMPLETED | CANCELLED
+  initiatedById  String?
+  initiatedAt    DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  product      Product?      @relation(fields: [productId], references: [id])
+  batch        ProductBatch? @relation(fields: [batchId], references: [id])
+  incident     Incident?     @relation(fields: [incidentId], references: [id])
+  initiatedBy  User?         @relation("RecallInitiator", fields: [initiatedById], references: [id])
+
+  @@index([organizationId])
+  @@index([productId])
+  @@index([batchId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Verification & audit (append-only, protected by DB triggers)
+// ---------------------------------------------------------------------------
+
+model VerificationLog {
+  id                    String   @id @default(cuid())
+  productId             String?
+  verificationTokenHash String // SHA-256 of the scanned token; raw tokens are never logged
+  timestamp             DateTime @default(now())
+  result                String
+  ipHash                String? // salted SHA-256; no raw IPs
+  userAgentHash         String?
+  source                String   @default("PUBLIC") // PUBLIC | ORG_SCAN
+  createdAt             DateTime @default(now())
+
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([verificationTokenHash])
+  @@index([timestamp])
+  @@index([result])
+  @@index([ipHash])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorUserId    String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  metadataJson   String   @default("{}")
+  timestamp      DateTime @default(now())
+  ipHash         String?
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  actor        User?         @relation(fields: [actorUserId], references: [id])
+
+  @@index([organizationId])
+  @@index([actorUserId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Inventory layer
+// ---------------------------------------------------------------------------
+
+/// Catalogue item (SKU). A SKU describes a kind of product; Product rows are passports (identities).
+model ProductSku {
+  id                         String   @id @default(cuid())
+  organizationId             String // brand owner
+  sku                        String
+  name                       String
+  description                String?
+  category                   String?
+  brand                      String?
+  manufacturerOrganizationId String?
+  unitOfMeasure              String   @default("PCS")
+  allowsFractional           Boolean  @default(false)
+  status                     String   @default("ACTIVE") // ACTIVE | DISCONTINUED
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  batches      ProductBatch[]
+  passports    Product[]
+  balances     InventoryBalance[]
+  reorderRules ReorderRule[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+}
+
+model Warehouse {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  address        String?
+  city           String?
+  country        String?
+  status         String   @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  locations StorageLocation[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model StorageLocation {
+  id             String   @id @default(cuid())
+  organizationId String
+  warehouseId    String
+  code           String
+  zone           String?
+  aisle          String?
+  shelf          String?
+  bin            String?
+  status         String   @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  warehouse Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  balances  InventoryBalance[]
+
+  @@unique([warehouseId, code])
+  @@index([organizationId])
+}
+
+/// Cached balance per (holder org, location, SKU, batch). Ledger entries are the source of truth.
+model InventoryBalance {
+  id             String   @id @default(cuid())
+  organizationId String // holder
+  warehouseId    String
+  locationId     String
+  skuId          String
+  batchId        String?
+  batchKey       String   @default("") // batchId or "" — keeps the unique key NULL-safe
+  unitOfMeasure  String
+  onHand         Decimal  @default(0) @db.Decimal(18, 4)
+  reserved       Decimal  @default(0) @db.Decimal(18, 4)
+  quarantined    Decimal  @default(0) @db.Decimal(18, 4)
+  damaged        Decimal  @default(0) @db.Decimal(18, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  location StorageLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  sku      ProductSku      @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  batch    ProductBatch?   @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, locationId, skuId, batchKey])
+  @@index([organizationId, skuId])
+  @@index([batchId])
+  @@index([warehouseId])
+}
+
+/// Ledger header. Immutable once written (DB trigger).
+model InventoryTransaction {
+  id              String   @id @default(cuid())
+  organizationId  String
+  type            String
+  status          String   @default("COMPLETED")
+  skuId           String
+  batchId         String?
+  unitOfMeasure   String
+  quantity        Decimal  @db.Decimal(18, 4)
+  fromWarehouseId String?
+  fromLocationId  String?
+  toWarehouseId   String?
+  toLocationId    String?
+  shipmentId      String?
+  shipmentItemId  String?
+  reservationId   String?
+  incidentId      String?
+  recallId        String?
+  productEventId  String?
+  correlationId   String?
+  reason          String?
+  actorUserId     String?
+  idempotencyKey  String?
+  createdAt       DateTime @default(now())
+
+  entries InventoryLedgerEntry[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, createdAt])
+  @@index([skuId])
+  @@index([batchId])
+  @@index([shipmentId])
+  @@index([type])
+}
+
+/// Signed bucket delta on one balance. Sum of entries == cached balance (reconciliation).
+model InventoryLedgerEntry {
+  id             String   @id @default(cuid())
+  transactionId  String
+  organizationId String
+  balanceId      String
+  bucket         String // ON_HAND | RESERVED | QUARANTINED | DAMAGED
+  delta          Decimal  @db.Decimal(18, 4)
+  createdAt      DateTime @default(now())
+
+  transaction InventoryTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  @@index([balanceId, bucket])
+  @@index([organizationId])
+}
+
+model InventoryReservation {
+  id             String    @id @default(cuid())
+  organizationId String
+  balanceId      String
+  skuId          String
+  batchId        String?
+  quantity       Decimal   @db.Decimal(18, 4)
+  shipmentId     String?
+  shipmentItemId String?   @unique
+  status         String    @default("ACTIVE") // ACTIVE | RELEASED | CONSUMED
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  releasedAt     DateTime?
+  consumedAt     DateTime?
+
+  @@index([organizationId, status])
+  @@index([shipmentId])
+  @@index([batchId])
+}
+
+model Shipment {
+  id                     String    @id @default(cuid())
+  reference              String    @unique
+  senderOrganizationId   String
+  receiverOrganizationId String
+  originWarehouseId      String
+  destinationWarehouseId String?
+  purpose                String    @default("STANDARD") // STANDARD | RECALL_RETURN
+  status                 String    @default("DRAFT") // DRAFT | RESERVED | READY_TO_DISPATCH | DISPATCHED | PARTIALLY_RECEIVED | RECEIVED | CANCELLED | REJECTED | RETURNED
+  transferCustody        Boolean   @default(false)
+  hasDiscrepancy         Boolean   @default(false)
+  notes                  String?
+  recallId               String?
+  createdById            String?
+  dispatchedById         String?
+  receivedById           String?
+  dispatchedAt           DateTime?
+  receivedAt             DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  items            ShipmentItem[]
+  custodyTransfers CustodyTransfer[]
+
+  @@index([senderOrganizationId, status])
+  @@index([receiverOrganizationId, status])
+}
+
+model ShipmentItem {
+  id             String   @id @default(cuid())
+  shipmentId     String
+  skuId          String
+  batchId        String?
+  fromLocationId String
+  unitOfMeasure  String
+  requestedQty   Decimal  @db.Decimal(18, 4)
+  dispatchedQty  Decimal  @default(0) @db.Decimal(18, 4)
+  receivedQty    Decimal  @default(0) @db.Decimal(18, 4)
+  damagedQty     Decimal  @default(0) @db.Decimal(18, 4)
+  missingQty     Decimal  @default(0) @db.Decimal(18, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  shipment Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  batch    ProductBatch? @relation(fields: [batchId], references: [id])
+
+  @@index([shipmentId])
+}
+
+/// Organization-configured reorder threshold (no defaults are assumed).
+model ReorderRule {
+  id             String   @id @default(cuid())
+  organizationId String
+  skuId          String
+  threshold      Decimal  @db.Decimal(18, 4)
+  updatedAt      DateTime @updatedAt
+
+  sku ProductSku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, skuId])
+}
+
+model InventoryDiscrepancy {
+  id             String    @id @default(cuid())
+  organizationId String
+  type           String // NEGATIVE_BALANCE | LEDGER_MISMATCH | SHIPMENT_SHORTAGE | SHIPMENT_DAMAGE | TRANSIT_MISMATCH | HELD_STOCK | STOCK_LOSS
+  status         String    @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
+  severity       String    @default("MEDIUM")
+  message        String
+  detailsJson    String    @default("{}")
+  skuId          String?
+  batchId        String?
+  balanceId      String?
+  shipmentId     String?
+  fingerprint    String // dedupe key for automatically detected conditions
+  resolvedById   String?
+  resolvedAt     DateTime?
+  resolutionNote String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId, status])
+  @@index([fingerprint])
+}
+
+/// First response of an idempotent operation, so client retries are safe.
+model IdempotencyRecord {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  operation      String
+  responseJson   String
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, key])
+}
+
+/// Messages from the public website contact form (reviewed by platform admins).
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  topic     String   @default("GENERAL") // GENERAL | SALES | SUPPORT | SECURITY | PRIVACY
+  message   String
+  status    String   @default("NEW") // NEW | IN_PROGRESS | CLOSED
+  ipHash    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  valueJson String
+  updatedAt DateTime @updatedAt
+}
+
+/// Present only during the controlled DEMO tamper operation (DEMO_MODE=true). While a row exists the
+/// ProductEvent immutability trigger is relaxed so the demo can simulate a database-level attacker.
+model DemoTamperUnlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}

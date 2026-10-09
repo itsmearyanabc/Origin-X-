@@ -1,0 +1,31 @@
+node_modules/
+dist/
+coverage/
+
+# Secrets & local environment — never commit
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Local blockchain deployment record (per machine)
+.originx-chain.json
+.originx-chain.test.json
+
+# Hardhat
+cache/
+artifacts/
+!contracts/artifacts/
+
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.originx-demo.json
+deploy/certs/*
+!deploy/certs/README.md
+
+# Build caches / local tooling
+*.tsbuildinfo
+.claude/

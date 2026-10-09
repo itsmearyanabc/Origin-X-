@@ -1,0 +1,48 @@
+# Production on a Hostinger VPS:  Cloudflare (proxy, TLS, WAF)  →  web (nginx :443: React app + /api proxy)  →  api :4000  →  Supabase Postgres
+#   docker compose -f docker-compose.prod.yml up -d --build
+# See docs/DEPLOYMENT.md for the full procedure (secrets, Cloudflare origin certificate, firewall).
+services:
+  api:
+    build: .
+    image: originx-api:latest
+    container_name: originx-api
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      TRUST_PROXY: "1"          # exactly one proxy hop (nginx) in front of the API
+      BEHIND_CLOUDFLARE: "true" # visitor IP comes from CF-Connecting-IP
+    expose:
+      - "4000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  web:
+    # nginx serving the built React app (web/dist) and proxying /api, /health, /ready to the API.
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    image: originx-web:latest
+    container_name: originx-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Cloudflare Origin Certificate + key (Cloudflare dashboard → SSL/TLS → Origin Server)
+      - ./deploy/certs:/etc/nginx/certs:ro
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }

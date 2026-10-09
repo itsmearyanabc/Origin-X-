@@ -1,0 +1,179 @@
+@import "tailwindcss";
+
+/* Dark mode is opt-in per panel via <html class="dark">. Marketing + verify pages stay light. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
+
+  /* Brand — signal orange */
+  --color-brand-50: #fff6ed;
+  --color-brand-100: #ffead4;
+  --color-brand-200: #ffd0a8;
+  --color-brand-300: #ffae71;
+  --color-brand-400: #ff8238;
+  --color-brand-500: #f25c05;
+  --color-brand-600: #d94a02;
+  --color-brand-700: #b43a06;
+  --color-brand-800: #8f300d;
+  --color-brand-900: #74290e;
+
+  /* Warm neutrals */
+  --color-ink-50: #fffbf7;
+  --color-ink-100: #f7f2ec;
+  --color-ink-200: #ebe4dc;
+  --color-ink-300: #d6ccc2;
+  --color-ink-400: #a8998b;
+  --color-ink-500: #7a6d61;
+  --color-ink-600: #5c5148;
+  --color-ink-700: #423a33;
+  --color-ink-800: #2a2420;
+  --color-ink-900: #1c1917;
+  --color-ink-950: #12100e;
+
+  /* Status (never brand orange — orange is not a warning) */
+  --color-ok-50: #ecfdf5;
+  --color-ok-100: #d1fae5;
+  --color-ok-500: #10b981;
+  --color-ok-600: #059669;
+  --color-ok-700: #047857;
+  --color-warn-50: #fefce8;
+  --color-warn-100: #fef9c3;
+  --color-warn-500: #eab308;
+  --color-warn-600: #ca8a04;
+  --color-warn-700: #a16207;
+  --color-bad-50: #fef2f2;
+  --color-bad-100: #fee2e2;
+  --color-bad-500: #ef4444;
+  --color-bad-600: #dc2626;
+  --color-bad-700: #b91c1c;
+
+  --shadow-soft: 0 1px 2px rgb(28 25 23 / 0.04), 0 8px 24px -12px rgb(28 25 23 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(28 25 23 / 0.04), 0 24px 48px -20px rgb(28 25 23 / 0.22);
+  --shadow-glow: 0 18px 50px -12px rgb(242 92 5 / 0.45);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.4s var(--ease-out-expo) infinite;
+  --animate-shimmer: shimmer 2.2s linear infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.9); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+}
+
+/* Semantic surface tokens (switch with .dark) */
+:root {
+  --bg: #fffbf7;
+  --surface: #ffffff;
+  --surface-2: #f7f2ec;
+  --line: #ebe4dc;
+  --text: #1c1917;
+  --text-muted: #6b5f55;
+  color-scheme: light;
+}
+.dark {
+  --bg: #12100e;
+  --surface: #1c1917;
+  --surface-2: #26211d;
+  --line: #3a332d;
+  --text: #f7f2ec;
+  --text-muted: #b3a69a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-ink-900);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .container-x {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1200px;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .container-x { padding-inline: 2rem; }
+  }
+  .hash {
+    font-family: var(--font-mono);
+    font-size: 0.78em;
+    letter-spacing: -0.01em;
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgb(28 25 23 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(28 25 23 / 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .text-gradient {
+    background: linear-gradient(100deg, var(--color-brand-600), var(--color-brand-400) 55%, #ffb347);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
+    background-size: 400% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 0.5rem;
+  }
+}
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
