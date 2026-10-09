@@ -10,6 +10,10 @@ import fs from "node:fs";
 type Demo = { apiUrl: string; password: string; tokens: Record<string, string>; tamperDemo: { naive: string; rewrite: string }; recallDemo: string; genuineA92: string };
 const demo = JSON.parse(fs.readFileSync(".originx-demo.json", "utf8")) as Demo;
 const API = `${process.env.API_URL ?? demo.apiUrl}/api/v1`;
+if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(API)) {
+  console.error(`Refusing to run the demo against ${API}: demo scenarios only run against a local development API.`);
+  process.exit(1);
+}
 const only = process.argv[2];
 
 const c = { bold: "\x1b[1m", green: "\x1b[32m", red: "\x1b[31m", yellow: "\x1b[33m", cyan: "\x1b[36m", dim: "\x1b[2m", reset: "\x1b[0m" };

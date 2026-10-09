@@ -3,6 +3,7 @@ import { notFound } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
 import { paginate, str, type Query } from "../lib/pagination.js";
 import { writeAudit } from "./audit.service.js";
+import { mailService } from "./mail.service.js";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -18,6 +19,7 @@ export class ContactService {
   async submit(input: unknown, ipHash: string) {
     const { website: _honeypot, ...data } = contactSchema.parse(input);
     const message = await prisma.contactMessage.create({ data: { ...data, ipHash } });
+    mailService.notifyAdmins(`New ${data.topic.toLowerCase()} message from ${data.name}`, `${data.name} <${data.email}>${data.company ? ` (${data.company})` : ""} sent a message via the website.`, "/admin/messages");
     return { received: true, reference: message.id.slice(-8).toUpperCase() };
   }
 

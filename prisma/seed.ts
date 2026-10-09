@@ -7,6 +7,7 @@
  *
  * Refuses to run when NODE_ENV=production (use src/cli/create-admin.ts there).
  */
+import "../scripts/assert-local-db.js"; // must stay first: refuses non-local databases
 import fs from "node:fs";
 import { config } from "../src/config.js";
 import { hashPassword } from "../src/lib/crypto.js";

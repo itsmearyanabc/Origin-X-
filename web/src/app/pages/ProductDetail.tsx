@@ -249,7 +249,6 @@ function RecallModal({ product, open, onClose }: { product: Product; open: boole
 
 function IntegrityTab({ product, verification, onVerify, verifying }: { product: Product; verification?: HistoryVerification; onVerify: () => void; verifying: boolean }) {
   const can = useCan();
-  const tamper = useOrgMutation((mode: "naive" | "rewrite") => api.post(`/products/${product.id}/demo/tamper`, { mode }), { success: "Demo tamper applied — run verification to see the result" });
   if (!verification)
     return (
       <Card>
@@ -317,24 +316,30 @@ function IntegrityTab({ product, verification, onVerify, verifying }: { product:
         </Table>
       </Card>
 
-      {can("demo:tamper") && product.relation.isBrandOwner && (
-        <Card className="border-dashed p-5">
-          <div className="flex flex-wrap items-center gap-4">
-            <FlaskConical className="h-5 w-5 text-brand-500" />
-            <div className="flex-1">
-              <p className="font-semibold text-fg">Demo tools</p>
-              <p className="text-sm text-muted">Simulate a database attacker (only available when the server runs in DEMO_MODE). This permanently compromises this product's record.</p>
-            </div>
-            <Button variant="secondary" size="sm" loading={tamper.isPending && tamper.variables === "naive"} onClick={() => tamper.mutate("naive")}>
-              Edit an event
-            </Button>
-            <Button variant="secondary" size="sm" loading={tamper.isPending && tamper.variables === "rewrite"} onClick={() => tamper.mutate("rewrite")}>
-              Rewrite chain
-            </Button>
-          </div>
-        </Card>
-      )}
+      {import.meta.env.DEV && can("demo:tamper") && product.relation.isBrandOwner && <DemoTamperCard productId={product.id} />}
     </div>
+  );
+}
+
+/** Local development only (DEMO_MODE): stripped from production builds via import.meta.env.DEV. */
+function DemoTamperCard({ productId }: { productId: string }) {
+  const tamper = useOrgMutation((mode: "naive" | "rewrite") => api.post(`/products/${productId}/demo/tamper`, { mode }), { success: "Demo tamper applied — run verification to see the result" });
+  return (
+    <Card className="border-dashed p-5">
+      <div className="flex flex-wrap items-center gap-4">
+        <FlaskConical className="h-5 w-5 text-brand-500" />
+        <div className="flex-1">
+          <p className="font-semibold text-fg">Demo tools</p>
+          <p className="text-sm text-muted">Simulate a database attacker (only available when the server runs in DEMO_MODE). This permanently compromises this product's record.</p>
+        </div>
+        <Button variant="secondary" size="sm" loading={tamper.isPending && tamper.variables === "naive"} onClick={() => tamper.mutate("naive")}>
+          Edit an event
+        </Button>
+        <Button variant="secondary" size="sm" loading={tamper.isPending && tamper.variables === "rewrite"} onClick={() => tamper.mutate("rewrite")}>
+          Rewrite chain
+        </Button>
+      </div>
+    </Card>
   );
 }
 

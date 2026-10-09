@@ -125,7 +125,7 @@ function ExperiencePreview({ k }: { k: string }) {
           </div>
           <div className="mt-3 rounded-2xl bg-white p-3 ring-1 ring-ink-200">
             <p className="text-xs font-bold text-ink-900">Glucora Insulin Pen</p>
-            <p className="text-[11px] text-ink-500">ABC Pharma · Batch C7</p>
+            <p className="text-[11px] text-ink-500">Example Pharma · Batch C7</p>
             <p className="mt-2 text-[11px] text-ink-600">Potency below specification in stability testing.</p>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px] font-semibold">
@@ -150,7 +150,7 @@ function ExperiencePreview({ k }: { k: string }) {
           ))}
         </div>
         <div className="mt-3 space-y-2">
-          {[["NovaMed Distributors", "Pending approval", "warn"], ["Shadow Pharma Traders", "Identity collision", "bad"], ["SwiftLogix", "Verified", "ok"]].map(([n, s, t]) => (
+          {[["Example Wholesale", "Pending approval", "warn"], ["Unknown Traders", "Identity collision", "bad"], ["Example Logistics", "Verified", "ok"]].map(([n, s, t]) => (
             <div key={n} className="flex items-center justify-between rounded-xl px-3 py-2 ring-1 ring-ink-200">
               <span className="text-xs font-semibold text-ink-800">{n}</span>
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", t === "ok" ? "bg-ok-50 text-ok-700" : t === "bad" ? "bg-bad-50 text-bad-700" : "bg-warn-50 text-warn-700")}>{s}</span>
@@ -166,7 +166,7 @@ function ExperiencePreview({ k }: { k: string }) {
         <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">2 pending</span>
       </div>
       <div className="mt-3 space-y-2">
-        {[["OrigiVax · Batch A92", "from ABC Pharma"], ["Aero X1 Earbuds", "from XYZ Electronics"]].map(([p, f]) => (
+        {[["Influenza Vaccine · Batch A92", "from Example Pharma"], ["Aero X1 Earbuds", "from Example Electronics"]].map(([p, f]) => (
           <div key={p} className="flex items-center justify-between rounded-xl px-3 py-2.5 ring-1 ring-ink-200">
             <div>
               <p className="text-xs font-semibold text-ink-900">{p}</p>

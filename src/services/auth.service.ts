@@ -6,6 +6,7 @@ import { hashPassword, hashSecret, randomToken, signAccessToken, verifyPassword 
 import { prisma } from "../lib/prisma.js";
 import { writeAudit } from "./audit.service.js";
 import { isPlatformAdmin } from "../middleware/auth.js";
+import { mailService } from "./mail.service.js";
 
 const password = z
   .string()
@@ -48,6 +49,7 @@ export class AuthService {
     });
     await writeAudit({ actorUserId: user.id, action: "USER_REGISTERED", resourceType: "User", resourceId: user.id, ipHash });
     const verification = await this.issueOneTimeToken(user.id, "EMAIL_VERIFICATION", 24 * 60);
+    mailService.emailVerification(user.email, user.fullName, verification);
     return { ...(await this.issueSession(user)), ...(config.demoMode ? { demoEmailVerificationToken: verification } : {}) };
   }
 
@@ -112,7 +114,8 @@ export class AuthService {
     if (!user) return { accepted: true };
     const token = await this.issueOneTimeToken(user.id, "PASSWORD_RESET", 60);
     await writeAudit({ actorUserId: user.id, action: "PASSWORD_RESET_REQUESTED", resourceType: "User", resourceId: user.id });
-    // No email provider is wired yet; the token is returned only in DEMO_MODE.
+    mailService.passwordReset(user.email, user.fullName, token);
+    // The token itself is returned only in DEMO_MODE (local development / tests).
     return { accepted: true, ...(config.demoMode ? { demoResetToken: token } : {}) };
   }
 
@@ -146,7 +149,10 @@ export class AuthService {
   }
 
   async requestEmailVerification(userId: string) {
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true, fullName: true, emailVerifiedAt: true } });
+    if (user.emailVerifiedAt) return { sent: false, alreadyVerified: true };
     const token = await this.issueOneTimeToken(userId, "EMAIL_VERIFICATION", 24 * 60);
+    mailService.emailVerification(user.email, user.fullName, token);
     return { sent: true, ...(config.demoMode ? { demoEmailVerificationToken: token } : {}) };
   }
 

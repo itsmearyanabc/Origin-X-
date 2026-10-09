@@ -31,6 +31,13 @@ Browser / QR scan ──HTTPS──> Cloudflare (DNS proxy, TLS, WAF, rate rule)
 3. Transactions are viewable at `https://amoy.polygonscan.com/tx/<hash>` (`BLOCKCHAIN_EXPLORER_TX_URL`).
    `BLOCKCHAIN_ANCHOR_POLICY=critical` anchors registration, QA, custody, delivery, recall and status events (the hash chain covers the events in between).
 
+## 2b. Email (SMTP)
+Password resets, email verification and team invitations are sent by email; the API refuses to start in production without SMTP.
+1. Pick a provider: Hostinger Mail (`smtp.hostinger.com`, port 465), Resend (`smtp.resend.com`, 465, user `resend`, password = API key), Brevo (`smtp-relay.brevo.com`, 587), or Amazon SES.
+2. Verify your sending domain with the provider and add its SPF / DKIM (and a DMARC) record in Cloudflare DNS (DNS only, not proxied).
+3. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (e.g. `ORIGINX <no-reply@your-domain.com>`) and optionally `MAIL_ADMIN_NOTIFY` (gets "organization awaiting approval" and contact-form alerts).
+4. After start, the log line `ORIGINX API started` shows `"email":{"configured":true,"ok":true}`; `ok:false` includes the SMTP error.
+
 ## 3. Hostinger VPS (Ubuntu)
 ```bash
 # Docker
@@ -69,4 +76,6 @@ docker compose -f docker-compose.prod.yml exec -e ADMIN_EMAIL=you@company.com -e
 | Logs | JSON lines: `docker compose -f docker-compose.prod.yml logs api` |
 | Backups | Supabase automatic backups / PITR |
 
-The server refuses to start in production with missing/default secrets, `DEMO_MODE=true`, wildcard CORS, or EVM mode without a key.
+The server refuses to start in production with missing/default secrets, `DEMO_MODE=true`, wildcard CORS, a non-https or placeholder `APP_URL`, no SMTP, or EVM mode without a key.
+
+**No demo data in production.** `db:seed`, `db:seed:inventory`, `db:reset` and `demo` refuse to run unless `DATABASE_URL` points at `localhost` (and `NODE_ENV` is not production); the production image does not even contain the TypeScript tooling to run them. The only production bootstrap is `create-admin`. Demo tooling in the web app (the tamper button, demo reset links) is compiled out of production builds.

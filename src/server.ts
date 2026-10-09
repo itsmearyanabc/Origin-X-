@@ -2,11 +2,12 @@ import { config } from "./config.js";
 import { createApp } from "./app.js";
 import { prisma } from "./lib/prisma.js";
 import { blockchainService, startAnchorWorker, stopAnchorWorker } from "./services/blockchain.service.js";
+import { mailService } from "./services/mail.service.js";
 
 const app = createApp();
 
 const server = app.listen(config.port, async () => {
-  const chain = await blockchainService.status();
+  const [chain, mail] = await Promise.all([blockchainService.status(), mailService.check()]);
   console.log(
     JSON.stringify({
       level: "info",
@@ -14,6 +15,7 @@ const server = app.listen(config.port, async () => {
       port: config.port,
       env: config.nodeEnv,
       demoMode: config.demoMode,
+      email: mail,
       blockchain: { configured: chain.configured, available: chain.available, network: chain.network, chainId: chain.chainId, contract: chain.contractAddress, reason: chain.reason },
     }),
   );

@@ -7,6 +7,7 @@ import { paginate, str, type Query } from "../lib/pagination.js";
 import type { Actor } from "../middleware/tenant.js";
 import { writeAudit } from "./audit.service.js";
 import { entitlementService } from "./entitlement.service.js";
+import { mailService } from "./mail.service.js";
 
 const optionalText = (max = 200) => z.string().trim().max(max).optional();
 
@@ -72,6 +73,7 @@ export class OrganizationService {
       },
     });
     await writeAudit({ organizationId: org.id, actorUserId: userId, action: "ORGANIZATION_CREATED", resourceType: "Organization", resourceId: org.id, ipHash });
+    mailService.notifyAdmins(`Organization awaiting approval: ${org.name}`, `${org.name} signed up and is waiting for review.`, `/admin/organizations/${org.id}`);
     return presentOrganization(org);
   }
 
@@ -149,7 +151,12 @@ export class OrganizationService {
       metadata: { email: data.email, role: data.role },
       ipHash: a.ipHash,
     });
-    // No email provider yet: the accept token is returned to the inviter to deliver.
+    const [org, inviter] = await Promise.all([
+      prisma.organization.findUniqueOrThrow({ where: { id: a.organizationId }, select: { name: true } }),
+      prisma.user.findUniqueOrThrow({ where: { id: a.userId }, select: { fullName: true } }),
+    ]);
+    mailService.invitation(data.email, org.name, inviter.fullName, data.role, token);
+    // The token is also returned so the inviter can share the link directly if email is delayed.
     return { invitation, acceptToken: token, entitlement: limit };
   }
 

@@ -77,9 +77,9 @@ export default function Onboarding() {
           {step === 0 && (
             <div className="space-y-4">
               <Field label="Organization name" required hint="Shown to partners and on public product pages.">
-                {(id) => <Input id={id} autoFocus value={profile.name} onChange={set("name")} placeholder="ABC Pharma" />}
+                {(id) => <Input id={id} autoFocus value={profile.name} onChange={set("name")} placeholder="Your company name" />}
               </Field>
-              <Field label="Legal name">{(id) => <Input id={id} value={profile.legalName} onChange={set("legalName")} placeholder="ABC Pharmaceuticals Pvt Ltd" />}</Field>
+              <Field label="Legal name">{(id) => <Input id={id} value={profile.legalName} onChange={set("legalName")} placeholder="Registered legal name" />}</Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Country">{(id) => <Input id={id} value={profile.country} onChange={set("country")} placeholder="IN" />}</Field>
                 <Field label="Industry">{(id) => <Input id={id} value={profile.industry} onChange={set("industry")} placeholder="Pharmaceuticals" />}</Field>

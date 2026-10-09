@@ -43,6 +43,12 @@
 
 **Inventory** — every stock change is a ledger transaction under row locks (`SELECT … FOR UPDATE`) in one DB transaction; DB CHECK constraints forbid negative stock and over-receipt; ledger tables are append-only by trigger; `Idempotency-Key` makes retries safe; fine-grained permissions (`inventory:*`, `shipments:*`, `warehouses:manage`, `catalogue:manage`) with adjustments limited to OWNER/ADMIN and a mandatory reason; shipments only between accepted partners; public verification never exposes warehouses, stock levels or partner quantities. Platform admins have read-only cross-tenant inventory views.
 
+**Email** — one-time tokens (reset 60 min, verification 24 h, invitation 7 days) are delivered only by email and stored hashed; messages are sent in the background so response time never reveals whether an account exists; SMTP requires TLS in production (implicit TLS on 465 or mandatory STARTTLS); user-supplied text in emails is HTML-escaped; tokens are never logged in production.
+
+**No demo data in production** — seed, reset and demo scripts refuse any non-`localhost` database; `DEMO_MODE` (token echo, tamper endpoint) is refused by the production config check, and the corresponding web UI is compiled out of production builds.
+
+**Dependencies** — `npm audit --omit=dev` is clean for the web app. For the API, the only open advisory is `deepmerge-ts` inside the Prisma CLI's config loader (parses only our own config file; npm's suggested "fix" is a Prisma downgrade) — re-check on each Prisma release.
+
 **Public contact form** — rate-limited, honeypot field, length limits; messages are only visible to platform admins.
 
 **Audit** — append-only `AuditLog` for auth, membership, product, event, custody, incident, recall, verification and every admin action (`ADMIN_*`).

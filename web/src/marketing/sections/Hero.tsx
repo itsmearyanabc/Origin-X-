@@ -33,7 +33,7 @@ function QrGlyph() {
 }
 
 const CHECKS = [
-  { icon: Fingerprint, label: "Identity check", detail: "Registered by ABC Pharma" },
+  { icon: Fingerprint, label: "Identity check", detail: "Registered by Example Pharma" },
   { icon: History, label: "History check", detail: "8 / 8 events hash-verified" },
   { icon: Blocks, label: "Proof check", detail: "Anchors match the chain" },
 ];
@@ -41,8 +41,8 @@ const CHECKS = [
 const TIMELINE = [
   { label: "Manufactured", place: "Delhi, India" },
   { label: "Quality approved", place: "QC Lab" },
-  { label: "Custody → SwiftLogix", place: "Delhi Hub" },
-  { label: "Retailer received", place: "HealthPlus" },
+  { label: "Custody → Example Logistics", place: "Delhi Hub" },
+  { label: "Retailer received", place: "Example Pharmacy" },
 ];
 
 function PhoneDemo() {
@@ -80,7 +80,7 @@ function PhoneDemo() {
             {phase !== "result" ? (
               <motion.div key="scan" className="px-6 pt-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }}>
                 <p className="text-center font-display text-lg font-bold text-ink-900">{phase === "scan" ? "Scanning product…" : "Verifying"}</p>
-                <p className="mt-1 text-center text-xs text-ink-500">OrigiVax Influenza Vaccine · Batch A92</p>
+                <p className="mt-1 text-center text-xs text-ink-500">Influenza Vaccine (example) · Batch A92</p>
                 <div className="relative mx-auto mt-6 aspect-square w-48 rounded-2xl bg-white p-4 shadow-soft ring-1 ring-ink-200">
                   <QrGlyph />
                   {["left-2 top-2 border-l-4 border-t-4", "right-2 top-2 border-r-4 border-t-4", "left-2 bottom-2 border-b-4 border-l-4", "right-2 bottom-2 border-b-4 border-r-4"].map((c) => (
@@ -130,8 +130,8 @@ function PhoneDemo() {
                 <div className="mt-4 flex items-center gap-4 rounded-2xl bg-white p-4 shadow-soft ring-1 ring-ink-200/70">
                   <TrustRing score={100} size={78} stroke={8} />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-ink-900">OrigiVax Influenza</p>
-                    <p className="text-xs text-ink-500">ABC Pharma · Batch A92</p>
+                    <p className="truncate text-sm font-bold text-ink-900">Influenza Vaccine</p>
+                    <p className="text-xs text-ink-500">Example Pharma · Batch A92</p>
                     <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-ok-50 px-2 py-0.5 text-[10px] font-bold text-ok-700">
                       <Check className="h-3 w-3" /> 8/8 on-chain
                     </p>
@@ -249,6 +249,7 @@ export function Hero() {
 
         <motion.div className="relative" initial={{ opacity: 0, y: 40, rotate: 2 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 1.2, ease: easeOutExpo, delay: 0.3 }}>
           <PhoneDemo />
+          <p className="mt-4 text-center text-xs text-ink-400">Illustration · example product and partners</p>
           <FloatingCard className="-left-14 top-20" delay={1.2}>
             <div className="flex items-center gap-3">
               <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">
@@ -256,7 +257,7 @@ export function Hero() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-ink-900">Custody accepted</p>
-                <p className="text-[11px] text-ink-500">SwiftLogix → MetroCare</p>
+                <p className="text-[11px] text-ink-500">Example Logistics → Example Distributor</p>
               </div>
             </div>
           </FloatingCard>

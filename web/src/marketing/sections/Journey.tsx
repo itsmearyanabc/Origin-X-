@@ -40,10 +40,10 @@ function StepVisual({ index }: { index: number }) {
       return (
         <div className="grid gap-3">
           {[
-            ["ABC Pharma", "Manufacturer", Factory],
-            ["SwiftLogix", "Logistics", Truck],
-            ["MetroCare", "Warehouse", Warehouse],
-            ["HealthPlus", "Retailer", Store],
+            ["Example Pharma", "Manufacturer", Factory],
+            ["Example Logistics", "Logistics", Truck],
+            ["Example Distributor", "Warehouse", Warehouse],
+            ["Example Pharmacy", "Retailer", Store],
           ].map(([name, role, Icon], i) => (
             <motion.div key={name as string} className={cn(card, "flex items-center gap-3")} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}>
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
@@ -71,7 +71,7 @@ function StepVisual({ index }: { index: number }) {
               <QrCode className="h-16 w-16" strokeWidth={1.4} />
             </div>
             <div className="min-w-0 space-y-2 text-sm">
-              <p className="font-display text-lg font-bold text-ink-900">OrigiVax Influenza</p>
+              <p className="font-display text-lg font-bold text-ink-900">Influenza Vaccine</p>
               <p className="text-ink-500">RX-29481 · Serial A92-000417</p>
               <p className="text-ink-500">Origin: Delhi, India</p>
               <p className="hash truncate rounded-md bg-ink-100 px-2 py-1 text-ink-600">identity 7f3a…c09e</p>

@@ -7,11 +7,11 @@ import { easeOutExpo, SectionHeading } from "../shared";
 
 const GENESIS = "0".repeat(64);
 const BASE = [
-  { type: "Registered", location: "ABC Pharma, Delhi" },
+  { type: "Registered", location: "Example Pharma, Delhi" },
   { type: "Manufactured", location: "Plant 1, Delhi" },
   { type: "Quality approved", location: "QC Lab, Delhi" },
-  { type: "Custody → SwiftLogix", location: "Delhi Hub" },
-  { type: "Warehouse received", location: "MetroCare, Gurugram" },
+  { type: "Custody → Example Logistics", location: "Delhi Hub" },
+  { type: "Warehouse received", location: "Example Distributor, Gurugram" },
 ];
 
 type Block = { type: string; location: string; prev: string; hash: string };

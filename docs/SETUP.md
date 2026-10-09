@@ -29,6 +29,9 @@ npm run db:seed:inventory   # optional: additive demo inventory (SKUs, warehouse
 npm run dev                 # API on http://localhost:4000
 npm run demo                # runs the four demo scenarios against the running API
 ```
+Seed, reset and demo scripts only run against a `localhost` database — they refuse Supabase or any remote URL.
+Without SMTP settings, emails (verification, reset, invitations) are printed to the API log; in dev the forgot-password page also shows the link directly.
+
 To start over: `npm run db:reset` (drops and re-creates the local database, then seeds; run `npm run db:seed:inventory` again afterwards). This is destructive for the local dev database only — run it yourself; tools such as Prisma refuse to run it on an AI agent's behalf.
 
 ## Web app (all three panels)

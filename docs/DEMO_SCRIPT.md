@@ -1,5 +1,7 @@
 # ORIGINX Demo Script
 
+> **Local development only.** The demo seed and scenarios refuse to run against any non-localhost database and `DEMO_MODE` cannot be enabled in production. Never present the demo on the production deployment.
+
 Preparation (once): `npm run db:up`, `npm run chain` (separate terminal), `npm run chain:deploy`, `npm run db:reset`, `npm run dev`.
 Then `npm run demo` runs everything below live, or `npm run demo -- <n>` for one scenario. Scenarios 2–4 change data; `npm run db:reset` restores it.
 

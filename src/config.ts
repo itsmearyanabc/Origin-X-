@@ -73,6 +73,21 @@ export const config = {
     cloneScanThreshold: Number(process.env.CLONE_SCAN_THRESHOLD ?? 25),
     unknownTokenLimitPer10Min: Number(process.env.UNKNOWN_TOKEN_LIMIT ?? 20),
   },
+  /** Outgoing email over SMTP (password reset, email verification, invitations). */
+  mail: {
+    host: process.env.SMTP_HOST ?? "",
+    port: Number(process.env.SMTP_PORT ?? 587),
+    /** true = implicit TLS (port 465); false = STARTTLS upgrade (port 587, required). */
+    secure: bool("SMTP_SECURE", Number(process.env.SMTP_PORT ?? 587) === 465),
+    /** Refuse to send without STARTTLS (keep true in production; false only for local SMTP catchers). */
+    requireTls: bool("SMTP_REQUIRE_TLS", true),
+    user: process.env.SMTP_USER ?? "",
+    password: process.env.SMTP_PASSWORD ?? "",
+    /** e.g. "ORIGINX <no-reply@your-domain.com>" — must be a sender your SMTP provider allows. */
+    from: process.env.MAIL_FROM ?? "",
+    /** Optional inbox notified about new contact-form messages and organizations awaiting approval. */
+    adminNotify: process.env.MAIL_ADMIN_NOTIFY ?? "",
+  },
   ai: {
     provider: process.env.AI_PROVIDER ?? "",
     apiKey: process.env.AI_API_KEY ?? "",
@@ -92,6 +107,13 @@ if (isProduction) {
   if (config.demoMode) problems.push("DEMO_MODE must be false in production");
   if (config.corsOrigins.includes("*")) problems.push("CORS_ORIGINS must list explicit origins in production");
   if (!process.env.DATABASE_URL) problems.push("DATABASE_URL must be set");
+  if (!/^https:\/\/[^/]+$/.test(config.appUrl) || /your-domain|localhost/.test(config.appUrl)) {
+    problems.push("APP_URL must be the public https origin of the app (e.g. https://originx.example.com, no trailing slash) — QR codes and email links use it");
+  }
+  if (!config.mail.secure && !config.mail.requireTls) problems.push("SMTP_REQUIRE_TLS must not be false in production");
+  if (!config.mail.host || !config.mail.from) {
+    problems.push("SMTP_HOST and MAIL_FROM must be set — password resets, email verification and invitations are delivered by email");
+  }
   if (config.blockchain.mode === "evm" && !config.blockchain.privateKey) {
     problems.push("BLOCKCHAIN_PRIVATE_KEY must be set for production anchoring (or set BLOCKCHAIN_MODE=disabled)");
   }

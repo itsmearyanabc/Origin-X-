@@ -5,6 +5,7 @@
  *
  *   npm run db:seed:inventory
  */
+import "../scripts/assert-local-db.js"; // must stay first: refuses non-local databases
 import { config } from "../src/config.js";
 import { prisma } from "../src/lib/prisma.js";
 import type { Actor } from "../src/middleware/tenant.js";

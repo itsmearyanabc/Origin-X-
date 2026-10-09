@@ -30,7 +30,7 @@ export default function ForgotPassword() {
         <div className="space-y-5 text-center">
           <MailCheck className="mx-auto h-12 w-12 text-ok-600" />
           <p className="text-sm text-ink-600">If an account exists for <span className="font-semibold text-ink-900">{email}</span>, a reset link is on its way. It expires in one hour.</p>
-          {sent.demoResetToken && (
+          {import.meta.env.DEV && sent.demoResetToken && (
             <Alert tone="warn" title="Demo mode">
               Email delivery isn't configured, so here is your reset link directly.
               <Link to={`/reset-password?token=${encodeURIComponent(sent.demoResetToken)}`} className={buttonClass("secondary", "sm", "mt-3")}>

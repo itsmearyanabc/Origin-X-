@@ -13,6 +13,7 @@ import {
   Handshake,
   History,
   LayoutDashboard,
+  Mail,
   PackageSearch,
   Truck,
   Warehouse,
@@ -83,6 +84,37 @@ function OrgSwitcher() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** Unverified email: offer to (re)send the confirmation link. */
+function EmailBanner() {
+  const { me } = useAuth();
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  if (!me || me.emailVerified) return null;
+  const send = async () => {
+    setState("sending");
+    try {
+      await api.post("/auth/verify-email/request", {}, false);
+      setState("sent");
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-2 px-6 py-2.5 text-sm text-fg">
+      <Mail className="h-4 w-4 shrink-0 text-brand-500" />
+      <span>
+        Confirm <b>{me.email}</b> to secure your account.
+      </span>
+      {state === "sent" ? (
+        <span className="text-ok-600">Email sent — check your inbox.</span>
+      ) : (
+        <button onClick={send} disabled={state === "sending"} className="font-semibold text-brand-600 hover:underline disabled:opacity-60">
+          {state === "sending" ? "Sending…" : state === "error" ? "Couldn't send — try again" : "Send confirmation email"}
+        </button>
+      )}
     </div>
   );
 }
@@ -176,7 +208,12 @@ export default function AppLayout() {
       homeTo="/app"
       groups={groups}
       topLeft={<OrgSwitcher />}
-      banner={<StatusBanner />}
+      banner={
+        <>
+          <EmailBanner />
+          <StatusBanner />
+        </>
+      }
       sidebarFooter={
         <Link to="/verify" target="_blank" className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-fg")}>
           <ScanLine className="h-4 w-4 text-brand-500" /> Open consumer verify page
