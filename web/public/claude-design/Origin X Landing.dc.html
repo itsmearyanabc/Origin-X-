@@ -80,6 +80,30 @@ section[data-screen-label="Hero"] a[data-route="/sign-up"]:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 </style>
+
+<style>
+/* 1. Flowing Gradient for Hero Subhead */
+span[data-hero="0"] {
+  background: linear-gradient(90deg, #475467 0%, #172033 25%, #F07824 50%, #172033 75%, #475467 100%) !important;
+  background-size: 300% 100% !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  animation: text-gradient-flow 8s linear infinite !important;
+}
+
+@keyframes text-gradient-flow {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 2. Parallax Layers for Background Blobs */
+.parallax-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+</style>
 </head>
 <body>
 <x-dc>
@@ -1378,6 +1402,47 @@ class Component extends DCLogic {
   };
 
   setTimeout(initAdvanced, 150);
+})();
+</script>
+
+<script>
+(function() {
+  const initHeroAdvanced = () => {
+    // Wrap existing blobs in parallax layers
+    const blobsContainer = document.querySelector('.ambient-blobs');
+    if (blobsContainer) {
+      const blob1 = blobsContainer.querySelector('.ambient-blob-1');
+      const blob2 = blobsContainer.querySelector('.ambient-blob-2');
+      
+      if (blob1 && !blob1.parentElement.classList.contains('parallax-layer')) {
+        const layer1 = document.createElement('div');
+        layer1.className = 'parallax-layer parallax-1';
+        blob1.parentNode.insertBefore(layer1, blob1);
+        layer1.appendChild(blob1);
+      }
+      
+      if (blob2 && !blob2.parentElement.classList.contains('parallax-layer')) {
+        const layer2 = document.createElement('div');
+        layer2.className = 'parallax-layer parallax-2';
+        blob2.parentNode.insertBefore(layer2, blob2);
+        layer2.appendChild(blob2);
+      }
+      
+      // Mouse Parallax Effect
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+        const y = (e.clientY / window.innerHeight - 0.5) * 2; // -1 to 1
+        
+        const p1 = document.querySelector('.parallax-1');
+        const p2 = document.querySelector('.parallax-2');
+        
+        if (p1) p1.style.transform = `translate(${x * -30}px, ${y * -30}px)`;
+        if (p2) p2.style.transform = `translate(${x * 40}px, ${y * 40}px)`;
+      });
+    }
+  };
+
+  setTimeout(initHeroAdvanced, 200);
 })();
 </script>
 </body>
