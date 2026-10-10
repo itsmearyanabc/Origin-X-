@@ -72,4 +72,6 @@ adminRouter.patch("/contact-messages/:id", requireAdmin("admin:orgs:manage"), as
 
 // Inventory (read-only, cross-tenant)
 adminRouter.get("/inventory/overview", async (_req, res) => res.json(ok(await adminService.inventoryOverview())));
+adminRouter.get("/inventory/warehouses", async (_req, res) => res.json(ok(await adminService.inventoryWarehouses())));
+adminRouter.get("/inventory/sales-overview", requireAdmin("admin:users:manage"), async (_req, res) => res.json(ok(await adminService.inventorySalesOverview())));
 adminRouter.get("/inventory/discrepancies", requireAdmin("admin:audit"), async (req, res) => res.json(list(await adminService.inventoryDiscrepancies(query(req)))));

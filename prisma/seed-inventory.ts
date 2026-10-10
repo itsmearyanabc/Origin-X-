@@ -14,6 +14,7 @@ import { catalogueService } from "../src/services/inventory/catalogue.service.js
 import { inventoryService } from "../src/services/inventory/inventory.service.js";
 import { shipmentService } from "../src/services/inventory/shipment.service.js";
 import { warehouseService } from "../src/services/inventory/warehouse.service.js";
+import { salesService } from "../src/services/inventory/sales.service.js";
 
 if (config.nodeEnv === "production") {
   console.error("Refusing to seed demo inventory in production.");
@@ -39,12 +40,12 @@ async function main() {
   const xyz = await actorFor("xyz-electronics", "owner@xyz.local");
 
   // Warehouses
-  const abcDc = await warehouseService.create(abc, { code: "DEL-DC1", name: "Delhi Distribution Centre", city: "New Delhi", country: "IN", address: "Okhla Phase II" });
+  const abcDc = await warehouseService.create(abc, { code: "DEL-DC1", name: "Delhi Distribution Centre", city: "New Delhi", country: "IN", address: "Okhla Phase II", latitude: 28.5355, longitude: 77.2732 });
   const coldRoom = await warehouseService.addLocation(abc, abcDc!.id, { code: "COLD-01", zone: "Cold room", aisle: "1", shelf: "A" });
-  const abcPlant = await warehouseService.create(abc, { code: "BAD-PLANT", name: "Baddi Plant Store", city: "Baddi", country: "IN" });
-  const hpStore = await warehouseService.create(health, { code: "CP-STORE", name: "Connaught Place Store", city: "New Delhi", country: "IN" });
-  const metroDc = await warehouseService.create(metro, { code: "GGN-DC", name: "Gurugram DC", city: "Gurugram", country: "IN" });
-  const xyzWh = await warehouseService.create(xyz, { code: "BLR-WH", name: "Bengaluru Warehouse", city: "Bengaluru", country: "IN" });
+  const abcPlant = await warehouseService.create(abc, { code: "BAD-PLANT", name: "Baddi Plant Store", city: "Baddi", country: "IN", latitude: 30.9578, longitude: 76.7914 });
+  const hpStore = await warehouseService.create(health, { code: "CP-STORE", name: "Connaught Place Store", city: "New Delhi", country: "IN", latitude: 28.6315, longitude: 77.2167 });
+  const metroDc = await warehouseService.create(metro, { code: "GGN-DC", name: "Gurugram DC", city: "Gurugram", country: "IN", latitude: 28.4595, longitude: 77.0266 });
+  const xyzWh = await warehouseService.create(xyz, { code: "BLR-WH", name: "Bengaluru Warehouse", city: "Bengaluru", country: "IN", latitude: 12.9716, longitude: 77.5946 });
 
   // Catalogue
   const vaccine = await catalogueService.createSku(abc, { sku: "OVX-05-DOSE", name: "OrigiVax Influenza Vaccine 0.5 ml", unitOfMeasure: "DOSE", category: "Vaccine", brand: "OrigiVax", description: "Inactivated quadrivalent influenza vaccine, pre-filled syringe." });
@@ -86,6 +87,13 @@ async function main() {
 
   // HealthPlus sells to consumers (external dispatch) — leaves the recorded network.
   await inventoryService.recordMovement(health, { type: "DISPATCH", skuId: vaccine.id, batchId: a95.id, locationId: main(hpStore), quantity: 35, reason: "Retail sales, week 41" });
+  for (const [index, sale] of [
+    { customerName: "Demo Customer · Connaught Place", quantity: 4, unitPrice: "1299.00" },
+    { customerName: "Demo Customer · Karol Bagh", quantity: 7, unitPrice: "1249.00" },
+    { customerName: "Demo Customer · South Delhi Clinic", quantity: 3, unitPrice: "1350.00" },
+  ].entries()) {
+    await salesService.create(health, { ...sale, reference: `DEMO-SALE-${index + 1}`, currency: "INR", items: [{ skuId: vaccine.id, batchId: a95.id, locationId: main(hpStore), quantity: sale.quantity, unitPrice: sale.unitPrice }] }, `demo-healthplus-sale-${index + 1}-2026`);
+  }
 
   // Reorder thresholds explicitly configured by each organization.
   await catalogueService.setReorderRule(abc, saline.id, { threshold: 1000 });

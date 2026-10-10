@@ -25,7 +25,8 @@
     "postinstall": "prisma generate",
     "admin:create": "node dist/cli/create-admin.js",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed:inventory": "tsx prisma/seed-inventory.ts"
+    "db:seed:inventory": "tsx prisma/seed-inventory.ts",
+    "db:seed:sales-demo": "tsx prisma/seed-sales-demo.ts"
   },
   "engines": {
     "node": ">=20"

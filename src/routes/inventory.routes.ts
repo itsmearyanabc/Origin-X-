@@ -6,6 +6,7 @@ import { actor, can, requireOrganization, tenantId } from "../middleware/tenant.
 import { catalogueService } from "../services/inventory/catalogue.service.js";
 import { inventoryService } from "../services/inventory/inventory.service.js";
 import { shipmentService } from "../services/inventory/shipment.service.js";
+import { salesService } from "../services/inventory/sales.service.js";
 import { warehouseService } from "../services/inventory/warehouse.service.js";
 
 /**
@@ -75,7 +76,18 @@ inventoryRouter.get("/inventory/summary", can("inventory:read"), async (req, res
   res.json(ok(await inventoryService.summary(tenantId(req))));
 });
 inventoryRouter.get("/inventory/sales-monitoring", can("inventory:read"), async (req, res) => {
+  res.json(ok(await salesService.monitoring(tenantId(req), String(query(req).period ?? "30d"))));
+});
+inventoryRouter.get("/inventory/dispatch-monitoring", can("inventory:read"), async (req, res) => {
   res.json(ok(await inventoryService.salesMonitoring(tenantId(req), query(req))));
+});
+inventoryRouter.get("/sales", can("inventory:read"), async (req, res) => {
+  const q = query(req);
+  const result = await salesService.list(tenantId(req), Number(q.page ?? 1), Number(q.pageSize ?? 20));
+  res.json(ok(result.items, result.meta));
+});
+inventoryRouter.post("/sales", can("inventory:dispatch"), async (req, res) => {
+  res.status(201).json(ok(await salesService.create(actor(req), req.body, idem(req))));
 });
 inventoryRouter.get("/inventory/products", can("inventory:read"), async (req, res) => {
   res.json(ok(await inventoryService.productInventory(tenantId(req), query(req))));

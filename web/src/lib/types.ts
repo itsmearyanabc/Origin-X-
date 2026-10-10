@@ -321,7 +321,7 @@ export type SkuStock = Sku & {
 };
 
 export type StorageLocation = { id: string; code: string; zone: string | null; aisle: string | null; shelf: string | null; bin: string | null; status: string; warehouseId: string };
-export type Warehouse = { id: string; code: string; name: string; address: string | null; city: string | null; country: string | null; status: string; locations: StorageLocation[]; balanceCount?: number };
+export type Warehouse = { id: string; code: string; name: string; address: string | null; city: string | null; country: string | null; latitude: number | null; longitude: number | null; status: string; locations: StorageLocation[]; balanceCount?: number };
 
 export type Balance = {
   id: string;

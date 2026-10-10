@@ -186,6 +186,7 @@ The migration is additive only. It creates tables, adds nullable or defaulted co
 ```bash
 npm run db:migrate          # prisma migrate deploy — applies 20261010000000_inventory_layer
 npm run db:seed:inventory   # optional, additive demo inventory on top of the base seed
+npm run db:seed:sales-demo  # sample priced sales and warehouse coordinates (development only)
 ```
 
 **Production.** The API container runs `prisma migrate deploy` on start. Take a Supabase backup first, as for any migration.

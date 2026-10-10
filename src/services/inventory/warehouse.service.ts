@@ -13,6 +13,8 @@ const warehouseSchema = z.object({
   address: z.string().trim().max(300).optional(),
   city: z.string().trim().max(120).optional(),
   country: z.string().trim().max(60).optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
 });
 const locationSchema = z.object({
   code,
@@ -70,7 +72,7 @@ export class WarehouseService {
   }
 
   async update(a: Actor, id: string, input: unknown) {
-    const patch = warehouseSchema.omit({ code: true }).extend({ status: z.enum(["ACTIVE", "INACTIVE"]) }).partial().parse(input);
+    const patch = warehouseSchema.omit({ code: true }).extend({ status: z.enum(["ACTIVE", "INACTIVE"]) }).partial().refine((value) => !((value.latitude == null) !== (value.longitude == null)), { message: "Latitude and longitude must be updated together.", path: ["longitude"] }).parse(input);
     const warehouse = await prisma.warehouse.findFirst({ where: { id, organizationId: a.organizationId } });
     if (!warehouse) throw notFound("Warehouse");
     if (patch.status === "INACTIVE") {

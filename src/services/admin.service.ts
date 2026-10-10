@@ -412,6 +412,28 @@ export class AdminService {
     };
   }
 
+  async inventorySalesOverview() {
+    const since = new Date(Date.now() - 30 * 86400000);
+    const [orders, revenue] = await Promise.all([
+      prisma.sale.count({ where: { soldAt: { gte: since } } }),
+      prisma.$queryRaw<Array<{ currency: string; revenue: string }>>`
+        SELECT s.currency, SUM(i."lineTotal")::text AS revenue
+        FROM "Sale" s JOIN "SaleItem" i ON i."saleId" = s.id
+        WHERE s."soldAt" >= ${since}
+        GROUP BY s.currency ORDER BY s.currency`,
+    ]);
+    return { orders, revenue };
+  }
+
+  async inventoryWarehouses() {
+    const warehouses = await prisma.warehouse.findMany({
+      select: { id: true, organizationId: true, code: true, name: true, city: true, country: true, latitude: true, longitude: true, status: true },
+      orderBy: [{ country: "asc" }, { city: "asc" }, { name: "asc" }],
+    });
+    const organizations = await prisma.organization.findMany({ where: { id: { in: [...new Set(warehouses.map((w) => w.organizationId))] } }, select: { id: true, name: true } });
+    return warehouses.map(({ organizationId, ...warehouse }) => ({ ...warehouse, organization: { name: organizations.find((o) => o.id === organizationId)?.name ?? "Unknown organization" } }));
+  }
+
   async inventoryDiscrepancies(q: Query) {
     const where = { ...(str(q, "status") ? { status: str(q, "status") } : {}), ...(str(q, "organizationId") ? { organizationId: str(q, "organizationId") } : {}) };
     const result = await paginate(q, () => prisma.inventoryDiscrepancy.count({ where }), (page) => prisma.inventoryDiscrepancy.findMany({ where, ...page, orderBy: { createdAt: "desc" } }));

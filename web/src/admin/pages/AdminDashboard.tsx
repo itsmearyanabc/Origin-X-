@@ -5,8 +5,10 @@ import { Badge, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, 
 import { CHART } from "@/app/hooks";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, humanize, number } from "@/lib/format";
-import type { ChainStatus } from "@/lib/types";
+import type { ChainStatus, Warehouse } from "@/lib/types";
 import { useAdminQuery } from "../hooks";
+import { WarehouseMap } from "@/app/inventory/WarehouseMap";
+import { useAuth } from "@/lib/auth";
 
 type Dashboard = {
   organizations: { byStatus: Record<string, number>; pendingApproval: number };
@@ -29,11 +31,15 @@ type Metrics = {
   organizationsWithUnusualActivity: Array<{ id: string; name: string; status: string; signals: Record<string, number>; total: number }>;
 };
 type InventoryOverview = { warehouses: number; skus: number; batchesOnHold: number; shipmentsByStatus: Record<string, number>; openDiscrepanciesByType: Record<string, number> };
+type InventorySalesOverview = { orders: number; revenue: Array<{ currency: string; revenue: string }> };
 
 export default function AdminDashboard() {
+  const { me } = useAuth();
   const dash = useAdminQuery(["dashboard"], () => api.get<Dashboard>("/admin/dashboard", undefined, false), { refetchInterval: 60_000 });
   const metrics = useAdminQuery(["metrics"], () => api.get<Metrics>("/admin/platform-metrics", undefined, false));
   const inventory = useAdminQuery(["inventory"], () => api.get<InventoryOverview>("/admin/inventory/overview", undefined, false));
+  const networkWarehouses = useAdminQuery(["inventory", "warehouses"], () => api.get<Array<Warehouse & { organization: { name: string } }>>("/admin/inventory/warehouses", undefined, false));
+  const superAdminSales = useAdminQuery(["inventory", "sales-overview"], () => api.get<InventorySalesOverview>("/admin/inventory/sales-overview", undefined, false), { enabled: me?.platformRole === "SUPER_ADMIN" });
   const d = dash.data;
   const m = metrics.data;
   if (dash.isLoading) return <Skeleton className="h-96 rounded-2xl" />;
@@ -156,6 +162,7 @@ export default function AdminDashboard() {
                 ["Batches on hold", inventory.data.batchesOnHold],
                 ["Shipments in transit", (inventory.data.shipmentsByStatus.DISPATCHED ?? 0) + (inventory.data.shipmentsByStatus.PARTIALLY_RECEIVED ?? 0)],
                 ["Open inventory discrepancies", Object.values(inventory.data.openDiscrepanciesByType).reduce((a, b) => a + b, 0)],
+                ...(me?.platformRole === "SUPER_ADMIN" ? [["Recorded sales (30d)", superAdminSales.data?.orders ?? 0], ["Sales revenue (30d)", superAdminSales.data?.revenue.map((r) => `${r.currency} ${Number(r.revenue).toLocaleString()}`).join(" · ") || "—"]] : []),
               ].map(([k, v]) => (
                 <div key={k as string} className="flex justify-between">
                   <span className="text-muted">{k}</span>
@@ -168,6 +175,11 @@ export default function AdminDashboard() {
           )}
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader title="Warehouse network map" description="All mapped locations across ORIGINX organizations." />
+        {networkWarehouses.data ? <div className="p-4"><WarehouseMap warehouses={networkWarehouses.data} /></div> : <Skeleton className="m-5 h-56 rounded-xl" />}
+      </Card>
 
       {m && m.mostVerifiedProducts.length > 0 && (
         <Card className="mt-4">

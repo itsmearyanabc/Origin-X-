@@ -26,6 +26,7 @@ The API picks the deployment up automatically. If you restart the chain, redeplo
 ```bash
 npm run db:seed             # demo organizations, users and products (password: OriginX-Demo-2026)
 npm run db:seed:inventory   # optional: additive demo inventory (SKUs, warehouses, stock, shipments)
+npm run db:seed:sales-demo  # optional: sample sales + warehouse map pins for HealthPlus; local DB only
 npm run dev                 # API on http://localhost:4000
 npm run demo                # runs the four demo scenarios against the running API
 ```

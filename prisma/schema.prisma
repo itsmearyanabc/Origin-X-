@@ -543,6 +543,8 @@ model Warehouse {
   address        String?
   city           String?
   country        String?
+  latitude       Float?
+  longitude      Float?
   status         String   @default("ACTIVE") // ACTIVE | INACTIVE
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -627,6 +629,7 @@ model InventoryTransaction {
   createdAt       DateTime @default(now())
 
   entries InventoryLedgerEntry[]
+  saleItem SaleItem?
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
@@ -634,6 +637,44 @@ model InventoryTransaction {
   @@index([batchId])
   @@index([shipmentId])
   @@index([type])
+}
+
+/// A completed point-of-sale / external customer order. Stock changes are mirrored in the immutable inventory ledger.
+model Sale {
+  id             String     @id @default(cuid())
+  organizationId String
+  reference      String
+  customerName   String
+  currency       String     @default("INR")
+  soldAt         DateTime   @default(now())
+  createdById    String?
+  createdAt      DateTime   @default(now())
+  items          SaleItem[]
+
+  @@unique([organizationId, reference])
+  @@index([organizationId, soldAt])
+}
+
+/// Price and product snapshots keep historical sales meaningful if the catalogue later changes.
+model SaleItem {
+  id                     String   @id @default(cuid())
+  saleId                 String
+  skuId                  String
+  batchId                String?
+  warehouseId            String
+  locationId             String
+  inventoryTransactionId String   @unique
+  sku                    String
+  productName            String
+  unitOfMeasure          String
+  quantity               Decimal  @db.Decimal(18, 4)
+  unitPrice              Decimal  @db.Decimal(18, 2)
+  lineTotal              Decimal  @db.Decimal(20, 2)
+  sale                   Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  inventoryTransaction   InventoryTransaction @relation(fields: [inventoryTransactionId], references: [id], onDelete: Restrict)
+
+  @@index([skuId])
+  @@index([saleId])
 }
 
 /// Signed bucket delta on one balance. Sum of entries == cached balance (reconciliation).

@@ -80,12 +80,13 @@ export async function refreshSession(): Promise<boolean> {
   return refreshing;
 }
 
-type RequestOptions = { body?: unknown; query?: Record<string, string | number | undefined | null>; org?: boolean; auth?: boolean };
+type RequestOptions = { body?: unknown; query?: Record<string, string | number | undefined | null>; org?: boolean; auth?: boolean; idempotencyKey?: string };
 
 async function request<T>(method: string, path: string, opts: RequestOptions = {}, retried = false): Promise<{ data: T; meta?: Meta }> {
   const url = new URL(`${BASE}${path}`, window.location.origin);
   for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   const headers: Record<string, string> = { "X-Requested-With": "originx-web" };
+  if (opts.idempotencyKey) headers["Idempotency-Key"] = opts.idempotencyKey;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.auth !== false && accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (opts.org && organizationId) headers["X-Organization-Id"] = organizationId;
@@ -107,7 +108,7 @@ export const api = {
   get: <T>(path: string, query?: RequestOptions["query"], org = true) => request<T>("GET", path, { query, org }).then((r) => r.data),
   page: <T>(path: string, query?: RequestOptions["query"], org = true) =>
     request<T[]>("GET", path, { query, org }).then((r) => ({ items: r.data, meta: r.meta! }) as Paged<T>),
-  post: <T>(path: string, body?: unknown, org = true) => request<T>("POST", path, { body: body ?? {}, org }).then((r) => r.data),
+  post: <T>(path: string, body?: unknown, org = true, idempotencyKey?: string) => request<T>("POST", path, { body: body ?? {}, org, idempotencyKey }).then((r) => r.data),
   patch: <T>(path: string, body?: unknown, org = true) => request<T>("PATCH", path, { body: body ?? {}, org }).then((r) => r.data),
   put: <T>(path: string, body?: unknown, org = true) => request<T>("PUT", path, { body: body ?? {}, org }).then((r) => r.data),
   delete: <T>(path: string, org = true) => request<T>("DELETE", path, { org }).then((r) => r.data),

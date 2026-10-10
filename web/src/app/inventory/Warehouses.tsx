@@ -8,14 +8,16 @@ import { formatDate } from "@/lib/format";
 import type { Balance, Warehouse } from "@/lib/types";
 import { useOrgMutation, useOrgQuery } from "../hooks";
 import { LocationSelect, Qty, useWarehouses } from "./shared";
+import { WarehouseMap } from "./WarehouseMap";
 
 function WarehouseModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [form, setForm] = useState({ code: "", name: "", address: "", city: "", country: "" });
+  const [form, setForm] = useState({ code: "", name: "", address: "", city: "", country: "", latitude: "", longitude: "" });
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const m = useOrgMutation(() => api.post("/warehouses", Object.fromEntries(Object.entries(form).filter(([, v]) => v.trim()))), {
+  const point = form.latitude && form.longitude ? { latitude: Number(form.latitude), longitude: Number(form.longitude) } : null;
+  const m = useOrgMutation(() => api.post("/warehouses", { ...Object.fromEntries(Object.entries(form).filter(([k, v]) => !["latitude", "longitude"].includes(k) && v.trim())), ...(point ?? {}) }), {
     success: "Warehouse created with a MAIN location",
     onSuccess: () => {
-      setForm({ code: "", name: "", address: "", city: "", country: "" });
+      setForm({ code: "", name: "", address: "", city: "", country: "", latitude: "", longitude: "" });
       onClose();
     },
   });
@@ -24,13 +26,13 @@ function WarehouseModal({ open, onClose }: { open: boolean; onClose: () => void 
       open={open}
       onClose={onClose}
       title="New warehouse"
-      description="City and country may appear (coarsely) in public product journeys. Codes, addresses and bins never do."
+      description="Pin the warehouse on the map to save its precise coordinates. Codes, addresses and bins never appear in public product journeys."
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button disabled={!form.code.trim() || form.name.trim().length < 2} loading={m.isPending} onClick={() => m.mutate(undefined)}>
+          <Button disabled={!form.code.trim() || form.name.trim().length < 2 || !point || !Number.isFinite(point.latitude) || !Number.isFinite(point.longitude) || Math.abs(point.latitude) > 90 || Math.abs(point.longitude) > 180} loading={m.isPending} onClick={() => m.mutate(undefined)}>
             Create
           </Button>
         </>
@@ -48,6 +50,9 @@ function WarehouseModal({ open, onClose }: { open: boolean; onClose: () => void 
         </Field>
         <Field label="City">{(id) => <Input id={id} value={form.city} onChange={set("city")} />}</Field>
         <Field label="Country">{(id) => <Input id={id} value={form.country} onChange={set("country")} placeholder="IN" />}</Field>
+        <Field label="Latitude">{(id) => <Input id={id} inputMode="decimal" value={form.latitude} onChange={set("latitude")} placeholder="28.6139" />}</Field>
+        <Field label="Longitude">{(id) => <Input id={id} inputMode="decimal" value={form.longitude} onChange={set("longitude")} placeholder="77.2090" />}</Field>
+        <div className="sm:col-span-2"><p className="mb-2 text-xs text-muted">Click the site location on the map or enter its latitude and longitude. A map pin is required.</p><WarehouseMap warehouses={[]} selected={point} onPick={(p) => setForm((f) => ({ ...f, latitude: String(p.latitude), longitude: String(p.longitude) }))} /></div>
       </div>
     </Modal>
   );
@@ -76,7 +81,10 @@ export default function Warehouses() {
         <Card>
           <ErrorState message={errorMessage(list.error)} />
         </Card>
-      ) : list.data?.length ? (
+      ) : (
+        <>
+        <section className="mb-4"><WarehouseMap warehouses={list.data ?? []} /></section>
+        {list.data?.length ? <>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {list.data.map((w) => (
             <Link key={w.id} to={`/app/warehouses/${w.id}`}>
@@ -99,10 +107,10 @@ export default function Warehouses() {
             </Link>
           ))}
         </div>
-      ) : (
-        <Card>
+        </> : <Card>
           <EmptyState icon={<WarehouseIcon className="h-5 w-5" />} title="No warehouses yet" description="Create one to start recording stock." action={can("warehouses:manage") && <Button onClick={() => setCreating(true)}>New warehouse</Button>} />
-        </Card>
+        </Card>}
+        </>
       )}
       <WarehouseModal open={creating} onClose={() => setCreating(false)} />
     </>
@@ -195,7 +203,10 @@ export function WarehouseDetail() {
   const [adding, setAdding] = useState(false);
   const [moving, setMoving] = useState<Balance | null>(null);
   const [quarantine, setQuarantine] = useState<{ balance: Balance; release: boolean } | null>(null);
+  const [mapPoint, setMapPoint] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [editingMap, setEditingMap] = useState(false);
   const w = useOrgQuery(["warehouse", warehouseId], () => api.get<Warehouse & { balances: Balance[] }>(`/warehouses/${warehouseId}`));
+  const saveMap = useOrgMutation(() => api.patch(`/warehouses/${warehouseId}`, mapPoint), { success: "Warehouse map location updated", onSuccess: () => setEditingMap(false) });
   const addLoc = useOrgMutation(() => api.post(`/warehouses/${warehouseId}/locations`, Object.fromEntries(Object.entries(loc).filter(([, v]) => v.trim()))), {
     success: "Location added",
     onSuccess: () => {
@@ -214,7 +225,7 @@ export function WarehouseDetail() {
       <Link to="/app/warehouses" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" /> Warehouses
       </Link>
-      <PageHeader eyebrow={<span className="hash">{data.code}</span>} title={data.name} description={[data.address, data.city, data.country].filter(Boolean).join(", ")} actions={<StatusBadge value={data.status} />} />
+      <PageHeader eyebrow={<span className="hash">{data.code}</span>} title={data.name} description={[data.address, data.city, data.country].filter(Boolean).join(", ")} actions={<div className="flex items-center gap-2">{can("warehouses:manage") && <Button size="sm" variant="secondary" icon={<MapPin className="h-3.5 w-3.5" />} onClick={() => { setMapPoint(data.latitude != null && data.longitude != null ? { latitude: data.latitude, longitude: data.longitude } : null); setEditingMap(true); }}>Set map pin</Button>}<StatusBadge value={data.status} /></div>} />
       <div className="grid gap-4 xl:grid-cols-[1fr_2fr]">
         <Card>
           <CardHeader
@@ -305,6 +316,10 @@ export function WarehouseDetail() {
       </div>
       <MoveModal balance={moving} onClose={() => setMoving(null)} />
       <QuarantineModal target={quarantine} onClose={() => setQuarantine(null)} />
+      <Modal open={editingMap} onClose={() => setEditingMap(false)} title="Warehouse map location" description="Click the exact site location. This pin is visible to your organization's members and platform administrators." footer={<><Button variant="secondary" onClick={() => setEditingMap(false)}>Cancel</Button><Button disabled={!mapPoint} loading={saveMap.isPending} onClick={() => saveMap.mutate(undefined)}>Save map pin</Button></>}>
+        <WarehouseMap warehouses={[]} selected={mapPoint} onPick={setMapPoint} />
+        <p className="mt-3 font-mono text-xs text-muted">{mapPoint ? `${mapPoint.latitude}, ${mapPoint.longitude}` : "No location selected"}</p>
+      </Modal>
     </>
   );
 }
