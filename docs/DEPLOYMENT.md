@@ -25,7 +25,7 @@ Browser / QR scan ──HTTPS──> Cloudflare (DNS proxy, TLS, WAF, rate rule)
 1. Create a **dedicated** wallet for anchoring (never a personal wallet). Fund it with test POL from a Polygon Amoy faucet.
 2. On your machine (key only in the shell environment):
    ```bash
-   BLOCKCHAIN_RPC_URL=https://rpc-amoy.polygon.technology BLOCKCHAIN_PRIVATE_KEY=0x... BLOCKCHAIN_NETWORK=polygon-amoy npm run chain:deploy
+   BLOCKCHAIN_RPC_URL=https://polygon-amoy.drpc.org BLOCKCHAIN_PRIVATE_KEY=0x... BLOCKCHAIN_NETWORK=polygon-amoy npm run chain:deploy
    ```
    Copy `contractAddress` from the output into `.env.production`.
 3. Transactions are viewable at `https://amoy.polygonscan.com/tx/<hash>` (`BLOCKCHAIN_EXPLORER_TX_URL`).
