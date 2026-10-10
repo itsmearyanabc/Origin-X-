@@ -7,6 +7,7 @@ import { useAdminCan } from "@/lib/auth";
 import { formatDate, humanize } from "@/lib/format";
 import type { Entitlements, Member } from "@/lib/types";
 import { useAdminMutation, useAdminQuery } from "../hooks";
+import { OrganizationPerformance } from "../OrganizationPerformance";
 
 type OrgDetail = {
   id: string;
@@ -74,6 +75,7 @@ export default function AdminOrganization() {
           ))
         }
       />
+      <OrganizationPerformance organizationId={o.id} />
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader title={`Members (${o.members.length})`} />

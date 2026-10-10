@@ -19,6 +19,7 @@ adminRouter.get("/platform-metrics", async (_req, res) => res.json(ok(await admi
 // Organizations
 adminRouter.get("/organizations", async (req, res) => res.json(list(await adminService.organizations(query(req)))));
 adminRouter.get("/organizations/:id", async (req, res) => res.json(ok(await adminService.organization(param(req, "id")))));
+adminRouter.get("/organizations/:id/performance", async (req, res) => res.json(ok(await adminService.organizationPerformance(param(req, "id")))));
 for (const action of ["approve", "reject", "suspend", "reactivate", "verify", "unverify"] as const) {
   adminRouter.post(`/organizations/:id/${action}`, requireAdmin("admin:orgs:manage"), async (req, res) => {
     res.json(ok(await adminService.setOrganizationState(admin(req), param(req, "id"), action, req.body)));

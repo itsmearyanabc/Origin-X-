@@ -153,6 +153,64 @@ export class AdminService {
     return { ...presentOrganization(org), entitlements: await entitlementService.snapshot(id) };
   }
 
+  /** Per-organization performance for the admin console: recorded activity only, last 30 days. */
+  async organizationPerformance(id: string) {
+    const org = await prisma.organization.findUnique({ where: { id }, select: { id: true } });
+    if (!org) throw notFound("Organization");
+    const since = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    since.setUTCHours(0, 0, 0, 0);
+    const productWhere = { organizationId: id };
+    const [scanDays, saleDays, byResult, trust, status, proofs, avgTrust, products, warehouses, openIncidents, activeRecalls, custody] = await Promise.all([
+      prisma.$queryRaw<Array<{ day: Date; total: bigint; failed: bigint }>>`
+        SELECT date_trunc('day', v."timestamp") AS day, count(*) AS total,
+               count(*) FILTER (WHERE v."result" IN ('UNKNOWN','COUNTERFEIT','HISTORY_COMPROMISED','SUSPICIOUS')) AS failed
+        FROM "VerificationLog" v JOIN "Product" p ON p."id" = v."productId"
+        WHERE p."organizationId" = ${id} AND v."timestamp" >= ${since}
+        GROUP BY 1 ORDER BY 1`,
+      prisma.$queryRaw<Array<{ day: Date; currency: string; orders: bigint; revenue: string }>>`
+        SELECT date_trunc('day', s."soldAt") AS day, s."currency", count(DISTINCT s."id") AS orders, coalesce(sum(i."lineTotal"), 0)::text AS revenue
+        FROM "Sale" s LEFT JOIN "SaleItem" i ON i."saleId" = s."id"
+        WHERE s."organizationId" = ${id} AND s."soldAt" >= ${since}
+        GROUP BY 1, 2 ORDER BY 1`,
+      prisma.verificationLog.groupBy({ by: ["result"], where: { timestamp: { gte: since }, product: productWhere }, _count: { _all: true } }),
+      prisma.product.groupBy({ by: ["trustLevel"], where: productWhere, _count: { _all: true } }),
+      prisma.product.groupBy({ by: ["status"], where: productWhere, _count: { _all: true } }),
+      prisma.blockchainProof.groupBy({ by: ["status"], where: { product: productWhere }, _count: { _all: true } }),
+      prisma.product.aggregate({ where: productWhere, _avg: { trustScore: true } }),
+      prisma.product.count({ where: productWhere }),
+      prisma.warehouse.count({ where: { organizationId: id } }),
+      prisma.incident.count({ where: { organizationId: id, status: { in: ["OPEN", "INVESTIGATING"] } } }),
+      prisma.recall.count({ where: { organizationId: id, status: { in: ["INITIATED", "IN_PROGRESS"] } } }),
+      prisma.custodyTransfer.count({ where: { OR: [{ fromOrganizationId: id }, { toOrganizationId: id }], status: "TRANSFER_ACCEPTED" } }),
+    ]);
+    const key = (d: Date) => d.toISOString().slice(0, 10);
+    const scans = new Map(scanDays.map((d) => [key(d.day), d]));
+    const currencies = [...new Set(saleDays.map((d) => d.currency))];
+    const days = Array.from({ length: 30 }, (_, i) => key(new Date(since.getTime() + i * 24 * 60 * 60 * 1000)));
+    return {
+      since: since.toISOString(),
+      kpis: {
+        products, warehouses, openIncidents, activeRecalls, completedCustodyTransfers: custody,
+        averageTrustScore: avgTrust._avg.trustScore === null ? null : Math.round(avgTrust._avg.trustScore),
+        scans30d: byResult.reduce((n, r) => n + r._count._all, 0),
+        failedScans30d: byResult.filter((r) => FAILED_RESULTS.includes(r.result)).reduce((n, r) => n + r._count._all, 0),
+        orders30d: saleDays.reduce((n, d) => n + Number(d.orders), 0),
+        revenue30d: currencies.map((currency) => ({ currency, revenue: saleDays.filter((d) => d.currency === currency).reduce((n, d) => n + Number(d.revenue), 0).toFixed(2) })),
+      },
+      verificationsByDay: days.map((day) => ({ day, total: Number(scans.get(day)?.total ?? 0), failed: Number(scans.get(day)?.failed ?? 0) })),
+      salesByDay: days.map((day) => ({
+        day,
+        orders: saleDays.filter((d) => key(d.day) === day).reduce((n, d) => n + Number(d.orders), 0),
+        ...Object.fromEntries(currencies.map((c) => [c, Number(saleDays.find((d) => key(d.day) === day && d.currency === c)?.revenue ?? 0)])),
+      })),
+      salesCurrencies: currencies,
+      verificationResults: Object.fromEntries(byResult.map((r) => [r.result, r._count._all])),
+      trustLevels: Object.fromEntries(trust.map((t) => [t.trustLevel, t._count._all])),
+      productStatus: Object.fromEntries(status.map((t) => [t.status, t._count._all])),
+      proofs: Object.fromEntries(proofs.map((t) => [t.status, t._count._all])),
+    };
+  }
+
   async setOrganizationState(a: AdminActor, id: string, action: "approve" | "reject" | "suspend" | "reactivate" | "verify" | "unverify", input: unknown) {
     const { reason } = z.object({ reason: z.string().trim().max(1_000).optional() }).parse(input ?? {});
     const org = await prisma.organization.findUnique({ where: { id } });
