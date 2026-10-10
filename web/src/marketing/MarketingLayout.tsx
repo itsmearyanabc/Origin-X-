@@ -181,6 +181,7 @@ function Footer() {
 
 export default function MarketingLayout() {
   useSmoothScroll();
+  const location = useLocation();
   return (
     <div className="min-h-screen bg-ink-50 text-ink-900">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
@@ -188,7 +189,17 @@ export default function MarketingLayout() {
       </a>
       <Navbar />
       <main id="main">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
       <Footer />
     </div>

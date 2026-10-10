@@ -1198,5 +1198,84 @@ class Component extends DCLogic {
   }
 }
 </script>
+
+<style>
+  [data-reveal="1"], [data-stagger="1"] > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+  [data-reveal="1"].is-revealed, [data-stagger="1"].is-revealed > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+<script>
+(function() {
+  const init = () => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+          if (entry.target.hasAttribute('data-stagger')) {
+            Array.from(entry.target.children).forEach((child, i) => {
+              child.style.transitionDelay = `${i * 0.12}s`;
+            });
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -50px 0px" });
+
+    document.querySelectorAll('[data-reveal="1"], [data-stagger="1"]').forEach(el => {
+      observer.observe(el);
+    });
+
+    const countObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const end = parseInt(el.textContent, 10) || 92;
+          const duration = 1500;
+          const startTime = performance.now();
+          const parentGradient = el.closest('div[style*="conic-gradient"]');
+          
+          function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const currentVal = Math.floor(easeProgress * end);
+            el.textContent = currentVal;
+            
+            if (parentGradient) {
+               parentGradient.style.background = `conic-gradient(#F07824 0 ${currentVal}%,#F2F4F7 0)`;
+            }
+
+            if (progress < 1) {
+              requestAnimationFrame(update);
+            } else {
+              el.textContent = end;
+              if (parentGradient) parentGradient.style.background = `conic-gradient(#F07824 0 ${end}%,#F2F4F7 0)`;
+            }
+          }
+          requestAnimationFrame(update);
+          countObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    const ninetyTwos = Array.from(document.querySelectorAll('*')).filter(el => 
+      el.childNodes.length === 1 && 
+      el.childNodes[0].nodeType === 3 && 
+      el.textContent.trim() === '92'
+    );
+    ninetyTwos.forEach(el => countObserver.observe(el));
+  };
+  
+  setTimeout(init, 50);
+})();
+</script>
 </body>
+
 </html>
