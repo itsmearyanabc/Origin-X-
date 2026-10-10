@@ -26,7 +26,7 @@ import {
   Siren,
   Users,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { PanelShell, type NavGroup } from "@/components/PanelShell";
 import { useAuth, useCan } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -92,30 +92,17 @@ function OrgSwitcher() {
 /** Unverified email: offer to (re)send the confirmation link. */
 function EmailBanner() {
   const { me } = useAuth();
-  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const location = useLocation();
   if (!me || me.emailVerified) return null;
-  const send = async () => {
-    setState("sending");
-    try {
-      await api.post("/auth/verify-email/request", {}, false);
-      setState("sent");
-    } catch {
-      setState("error");
-    }
-  };
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-2 px-6 py-2.5 text-sm text-fg">
       <Mail className="h-4 w-4 shrink-0 text-brand-500" />
       <span>
         Confirm <b>{me.email}</b> to secure your account.
       </span>
-      {state === "sent" ? (
-        <span className="text-ok-600">Email sent — check your inbox.</span>
-      ) : (
-        <button onClick={send} disabled={state === "sending"} className="font-semibold text-brand-600 hover:underline disabled:opacity-60">
-          {state === "sending" ? "Sending…" : state === "error" ? "Couldn't send — try again" : "Send confirmation email"}
-        </button>
-      )}
+      <Link to={`/verify-email?send=1&next=${encodeURIComponent(location.pathname)}`} className="font-semibold text-brand-600 hover:underline">
+        Get a verification code
+      </Link>
     </div>
   );
 }

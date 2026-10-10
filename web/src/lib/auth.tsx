@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import type { Me, OrgRole } from "./types";
 
 type Status = "loading" | "anonymous" | "authenticated";
-type AuthResult = { user: { accountType: Me["accountType"] }; accessToken: string; demoEmailVerificationToken?: string };
+type AuthResult = { user: { accountType: Me["accountType"] }; accessToken: string; emailVerificationRequired?: boolean; demoEmailOtp?: string };
 
 type AuthContextValue = {
   status: Status;

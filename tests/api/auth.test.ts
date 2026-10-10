@@ -75,12 +75,56 @@ describe("authentication", () => {
     expect(relogin.status).toBe(200);
   });
 
-  it("verifies email addresses", async () => {
+  it("verifies email addresses with a 6-digit code", async () => {
     const res = await api().post("/api/v1/auth/register").send({ email: `verify-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Verify Me" });
-    const verify = await api().post("/api/v1/auth/verify-email").send({ token: res.body.data.demoEmailVerificationToken });
+    expect(res.body.data.emailVerificationRequired).toBe(true);
+    const code = res.body.data.demoEmailOtp as string;
+    expect(code).toMatch(/^\d{6}$/);
+    const auth = { Authorization: `Bearer ${res.body.data.accessToken}` };
+    // The code is stored only as a digest.
+    const stored = await prisma.oneTimeToken.findFirstOrThrow({ where: { purpose: "EMAIL_OTP", user: { id: res.body.data.user.id } } });
+    expect(stored.tokenHash).not.toContain(code);
+    expect((await api().post("/api/v1/auth/verify-email/otp").send({ code })).status).toBe(401); // must be signed in
+    const verify = await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: `${code.slice(0, 3)} ${code.slice(3)}` });
     expect(verify.status).toBe(200);
-    const me = await api().get("/api/v1/auth/me").set("Authorization", `Bearer ${res.body.data.accessToken}`);
-    expect(me.body.data.emailVerified).toBe(true);
+    expect((await api().get("/api/v1/auth/me").set(auth)).body.data.emailVerified).toBe(true);
+    // Used codes cannot be replayed; already-verified users are told so.
+    expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code })).body.data.alreadyVerified).toBe(true);
+  });
+
+  it("locks a verification code after 5 wrong guesses and throttles resends", async () => {
+    const res = await api().post("/api/v1/auth/register").send({ email: `otp-lock-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Otp Lock" });
+    const code = res.body.data.demoEmailOtp as string;
+    const auth = { Authorization: `Bearer ${res.body.data.accessToken}` };
+    const wrong = code === "000000" ? "111111" : "000000";
+    for (let i = 1; i <= 4; i++) {
+      const r = await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: wrong });
+      expect(r.status).toBe(400);
+      expect(r.body.error.code).toBe("INVALID_CODE");
+      expect(r.body.error.message).toContain(`${5 - i} attempt`);
+    }
+    expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: wrong })).body.error.code).toBe("CODE_LOCKED");
+    // Even the right code no longer works once locked.
+    expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code })).status).toBeGreaterThanOrEqual(400);
+    expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: "12a456" })).body.error.code).toBe("INVALID_CODE");
+
+    // Resending right away is throttled; after the cooldown a fresh code works and the old one does not.
+    const tooSoon = await api().post("/api/v1/auth/verify-email/request").set(auth).send({});
+    expect(tooSoon.status).toBe(429);
+    expect(tooSoon.body.error.code).toBe("OTP_RESEND_TOO_SOON");
+    await prisma.oneTimeToken.updateMany({ where: { purpose: "EMAIL_OTP", user: { id: res.body.data.user.id } }, data: { createdAt: new Date(Date.now() - 120_000) } });
+    const resent = await api().post("/api/v1/auth/verify-email/request").set(auth).send({});
+    expect(resent.status).toBe(200);
+    const fresh = resent.body.data.demoEmailOtp as string;
+    expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: fresh })).status).toBe(200);
+  });
+
+  it("rejects expired verification codes", async () => {
+    const res = await api().post("/api/v1/auth/register").send({ email: `otp-exp-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Otp Expired" });
+    await prisma.oneTimeToken.updateMany({ where: { purpose: "EMAIL_OTP", user: { id: res.body.data.user.id } }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    const r = await api().post("/api/v1/auth/verify-email/otp").set({ Authorization: `Bearer ${res.body.data.accessToken}` }).send({ code: res.body.data.demoEmailOtp });
+    expect(r.status).toBe(400);
+    expect(r.body.error.code).toBe("CODE_EXPIRED");
   });
 
   it("browser sessions keep the refresh token in an httpOnly cookie and require the CSRF header", async () => {

@@ -81,7 +81,8 @@ export default function SignUp() {
     setError(null);
     try {
       await signUp(v.fullName, v.email, v.password);
-      navigate(next ?? "/onboarding", { replace: true });
+      // Email sign-ups confirm their address with the 6-digit code we just emailed.
+      navigate(`/verify-email?next=${encodeURIComponent(next ?? "/onboarding")}`, { replace: true });
     } catch (e) {
       setError(errorMessage(e));
     }

@@ -68,10 +68,11 @@ model RefreshToken {
 model OneTimeToken {
   id        String    @id @default(cuid())
   userId    String
-  purpose   String // PASSWORD_RESET | EMAIL_VERIFICATION
+  purpose   String // PASSWORD_RESET | EMAIL_VERIFICATION (link) | EMAIL_OTP (6-digit code)
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
+  attempts  Int       @default(0) // wrong guesses (EMAIL_OTP locks after OTP_MAX_ATTEMPTS)
   createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,5 +1,5 @@
 import { OAuth2Client, type TokenPayload } from "google-auth-library";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { config } from "../config.js";
 import { AppError } from "../lib/errors.js";
@@ -42,6 +42,12 @@ function publicUser(user: SessionUser) {
 
 const googleClient = new OAuth2Client(config.googleClientId);
 
+/** Email verification codes: 6 digits, short-lived, few guesses, throttled resends. */
+const OTP_TTL_MINUTES = 10;
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RESEND_SECONDS = 60;
+const otpDigest = (userId: string, code: string) => hashSecret(`email-otp:${userId}:${code}`);
+
 export class AuthService {
   async register(input: unknown, ipHash?: string | null) {
     const data = registerSchema.parse(input);
@@ -51,9 +57,9 @@ export class AuthService {
       data: { email: data.email, passwordHash: await hashPassword(data.password), fullName: data.fullName },
     });
     await writeAudit({ actorUserId: user.id, action: "USER_REGISTERED", resourceType: "User", resourceId: user.id, ipHash });
-    const verification = await this.issueOneTimeToken(user.id, "EMAIL_VERIFICATION", 24 * 60);
-    mailService.emailVerification(user.email, user.fullName, verification);
-    return { ...(await this.issueSession(user)), ...(config.demoMode ? { demoEmailVerificationToken: verification } : {}) };
+    const code = await this.issueEmailOtp(user.id);
+    mailService.emailVerificationCode(user.email, user.fullName, code, OTP_TTL_MINUTES);
+    return { ...(await this.issueSession(user)), emailVerificationRequired: true, ...(config.demoMode ? { demoEmailOtp: code } : {}) };
   }
 
   async login(input: unknown, ipHash?: string | null) {
@@ -188,9 +194,40 @@ export class AuthService {
   async requestEmailVerification(userId: string) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true, fullName: true, emailVerifiedAt: true } });
     if (user.emailVerifiedAt) return { sent: false, alreadyVerified: true };
-    const token = await this.issueOneTimeToken(userId, "EMAIL_VERIFICATION", 24 * 60);
-    mailService.emailVerification(user.email, user.fullName, token);
-    return { sent: true, ...(config.demoMode ? { demoEmailVerificationToken: token } : {}) };
+    const last = await prisma.oneTimeToken.findFirst({ where: { userId, purpose: "EMAIL_OTP" }, orderBy: { createdAt: "desc" }, select: { createdAt: true } });
+    const wait = last ? Math.ceil(OTP_RESEND_SECONDS - (Date.now() - last.createdAt.getTime()) / 1000) : 0;
+    if (wait > 0) throw new AppError("OTP_RESEND_TOO_SOON", `Please wait ${wait} seconds before requesting another code.`, 429, [{ retryAfterSeconds: wait }]);
+    const code = await this.issueEmailOtp(userId);
+    mailService.emailVerificationCode(user.email, user.fullName, code, OTP_TTL_MINUTES);
+    return { sent: true, expiresInMinutes: OTP_TTL_MINUTES, resendAfterSeconds: OTP_RESEND_SECONDS, ...(config.demoMode ? { demoEmailOtp: code } : {}) };
+  }
+
+  /**
+   * Confirms the signed-in user's email with the 6-digit code. Wrong guesses are counted per code;
+   * after OTP_MAX_ATTEMPTS the code is burned and a new one must be requested.
+   */
+  async verifyEmailOtp(userId: string, rawCode: unknown) {
+    const code = String(rawCode ?? "").replace(/\s+/g, "");
+    if (!/^\d{6}$/.test(code)) throw new AppError("INVALID_CODE", "Enter the 6-digit code from the email.", 422);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { emailVerifiedAt: true } });
+    if (user.emailVerifiedAt) return { verified: true, alreadyVerified: true };
+    const otp = await prisma.oneTimeToken.findFirst({ where: { userId, purpose: "EMAIL_OTP", usedAt: null }, orderBy: { createdAt: "desc" } });
+    if (!otp || otp.expiresAt < new Date()) throw new AppError("CODE_EXPIRED", "This code has expired. Request a new one.", 400);
+    if (otp.attempts >= OTP_MAX_ATTEMPTS) throw new AppError("CODE_LOCKED", "Too many wrong attempts. Request a new code.", 429);
+    const expected = Buffer.from(otp.tokenHash.split(":").pop()!, "hex");
+    const actual = Buffer.from(otpDigest(userId, code), "hex");
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+      const { attempts } = await prisma.oneTimeToken.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
+      const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
+      if (left === 0) await prisma.oneTimeToken.update({ where: { id: otp.id }, data: { usedAt: new Date() } });
+      throw new AppError(left ? "INVALID_CODE" : "CODE_LOCKED", left ? `That code is not correct. ${left} attempt${left === 1 ? "" : "s"} left.` : "Too many wrong attempts. Request a new code.", left ? 400 : 429);
+    }
+    await prisma.$transaction([
+      prisma.oneTimeToken.update({ where: { id: otp.id }, data: { usedAt: new Date() } }),
+      prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } }),
+    ]);
+    await writeAudit({ actorUserId: userId, action: "EMAIL_VERIFIED", resourceType: "User", resourceId: userId, metadata: { method: "otp" } });
+    return { verified: true };
   }
 
   async verifyEmail(token: string) {
@@ -216,6 +253,17 @@ export class AuthService {
         verificationStatus: m.organization.verificationStatus,
       })),
     };
+  }
+
+  /** Issues a fresh 6-digit code and cancels any earlier unused code for this user. */
+  private async issueEmailOtp(userId: string) {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    await prisma.oneTimeToken.updateMany({ where: { userId, purpose: "EMAIL_OTP", usedAt: null }, data: { usedAt: new Date() } });
+    await prisma.oneTimeToken.create({
+      // tokenHash is unique per row; the random prefix keeps two identical codes from colliding.
+      data: { userId, purpose: "EMAIL_OTP", tokenHash: `${randomUUID()}:${otpDigest(userId, code)}`, expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60_000) },
+    });
+    return code;
   }
 
   private async issueOneTimeToken(userId: string, purpose: "PASSWORD_RESET" | "EMAIL_VERIFICATION", ttlMinutes: number) {

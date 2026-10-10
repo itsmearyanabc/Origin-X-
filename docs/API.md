@@ -32,7 +32,10 @@ Browser sessions: the access token (15 min) is returned in JSON and kept in memo
 | POST | `/forgot-password` | — | always `{accepted:true}` |
 | POST | `/reset-password` | — | `{token, password}` |
 | POST | `/change-password` | bearer | `{currentPassword, newPassword}` |
-| POST | `/verify-email/request`, `/verify-email` | bearer / — | |
+| POST | `/verify-email/request` | bearer | emails a 6-digit code (10 min, 60 s resend cooldown → `OTP_RESEND_TOO_SOON` 429) |
+| POST | `/verify-email/otp` | bearer | `{code}` — confirms the email; 5 wrong tries lock the code (`INVALID_CODE` / `CODE_LOCKED` / `CODE_EXPIRED`) |
+| POST | `/verify-email` | — | `{token}` — legacy confirmation links sent before codes |
+| POST | `/google` | — | `{credential}` Google ID token; only Google-verified emails (`GOOGLE_EMAIL_UNVERIFIED`) |
 | GET | `/me` | bearer | profile, account type, organizations + roles |
 
 ## Organizations — `/organizations`

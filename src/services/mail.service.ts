@@ -86,6 +86,31 @@ export class MailService {
     });
   }
 
+  /** 6-digit email verification code. The code is in the subject so it shows in notifications. */
+  emailVerificationCode(to: string, name: string, code: string, ttlMinutes: number) {
+    const spaced = `${code.slice(0, 3)} ${code.slice(3)}`;
+    this.send({
+      to,
+      subject: `${code} is your ORIGINX verification code`,
+      text: `Hi ${name},
+
+Your ORIGINX verification code is: ${code}
+
+Enter it on the verification screen. It expires in ${ttlMinutes} minutes and works once.
+
+If you didn't create an ORIGINX account, ignore this email.`,
+      html: layout(
+        "Your verification code",
+        `<p>Hi ${esc(name)},</p><p>Enter this code on the ORIGINX verification screen to confirm your email address:</p>
+         <p style="margin:24px 0;text-align:center"><span style="display:inline-block;font-family:'SFMono-Regular',Consolas,monospace;font-size:34px;font-weight:700;letter-spacing:8px;color:#1c1917;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 22px">${esc(spaced)}</span></p>
+         <p>It expires in <strong>${ttlMinutes} minutes</strong> and can be used once. Never share this code with anyone — ORIGINX staff will never ask for it.</p>`,
+        undefined,
+        "If you didn't create an ORIGINX account, you can ignore this email.",
+      ),
+    });
+  }
+
+  /** Legacy link-based verification (links sent before codes were introduced still work). */
   emailVerification(to: string, name: string, token: string) {
     const url = link("/verify-email", token);
     this.send({

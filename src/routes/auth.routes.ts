@@ -98,6 +98,10 @@ authRouter.post("/verify-email/request", requireAuth, authLimiter, async (req, r
   res.json(ok(await authService.requestEmailVerification(req.user!.id)));
 });
 
+authRouter.post("/verify-email/otp", requireAuth, authLimiter, async (req, res) => {
+  res.json(ok(await authService.verifyEmailOtp(req.user!.id, req.body?.code)));
+});
+
 authRouter.post("/verify-email", authLimiter, async (req, res) => {
   res.json(ok(await authService.verifyEmail(String(req.body?.token ?? ""))));
 });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Boxes, Building2, Check, Clock, Factory, Package, ShieldCheck, Store, Truck, Warehouse, type LucideIcon } from "lucide-react";
 import { Alert, Button, Field, Input } from "@/components/ui";
@@ -53,6 +53,9 @@ export default function Onboarding() {
   };
 
   const steps = ["Profile", "Supply-chain role", "Review"];
+
+  // Email sign-ups confirm their address with the emailed 6-digit code before creating an organization.
+  if (me && !me.emailVerified) return <Navigate to="/verify-email?send=1&next=%2Fonboarding" replace />;
 
   return (
     <AuthCard title={step === 3 ? "You're set up" : "Set up your organization"} description={step === 3 ? undefined : "This is the workspace your team, products and partners will live in."}>
