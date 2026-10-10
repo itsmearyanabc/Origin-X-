@@ -22,7 +22,7 @@ export default function ChatWidget() {
 
     try {
       // Hit the Express backend route
-      const res = await fetch("http://localhost:4000/site/chat", {
+      const res = await fetch("/api/v1/site/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMsg }),
