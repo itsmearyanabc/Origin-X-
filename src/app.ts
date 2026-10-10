@@ -22,7 +22,7 @@ export function createApp() {
   app.disable("x-powered-by");
   app.set("trust proxy", config.trustProxy);
 
-  app.use(helmet({ contentSecurityPolicy: { directives: { "img-src": ["'self'", "data:", "https://tile.openstreetmap.org"] } } }));
+  app.use(helmet({ crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }, contentSecurityPolicy: { directives: { "img-src": ["'self'", "data:", "https://tile.openstreetmap.org"] } } }));
   app.use(
     cors({
       origin: config.corsOrigins.includes("*") ? true : config.corsOrigins,
