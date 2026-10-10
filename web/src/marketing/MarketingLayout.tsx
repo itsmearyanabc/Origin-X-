@@ -1,3 +1,4 @@
+import ChatWidget from "./ChatWidget";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "motion/react";
@@ -200,6 +201,7 @@ export default function MarketingLayout() {
             <Outlet />
           </motion.div>
         </AnimatePresence>
+        <ChatWidget />
       </main>
       <Footer />
     </div>
