@@ -1562,17 +1562,17 @@ class Component extends DCLogic {
             hero.style.position = 'relative';
             viewer.container.style.position = 'absolute';
             // Place it in the center background
-            viewer.container.style.bottom = '-20px';
+            viewer.container.style.top = '50%';
             viewer.container.style.left = '50%';
-            viewer.container.style.transform = 'translate(-50%, 0)';
+            viewer.container.style.transform = 'translate(-50%, -50%)';
             viewer.container.style.zIndex = '0';
-            viewer.container.style.opacity = '1'; // subtle behind text
+            viewer.container.style.opacity = '0.9'; // subtle behind text
             hero.insertBefore(viewer.container, hero.firstChild);
         } else {
             viewer.container.style.position = 'fixed';
-            viewer.container.style.bottom = '-20px';
+            viewer.container.style.top = '50%';
             viewer.container.style.left = '50%';
-            viewer.container.style.transform = 'translate(-50%, 0)';
+            viewer.container.style.transform = 'translate(-50%, -50%)';
             viewer.container.style.zIndex = '-1';
             document.body.appendChild(viewer.container);
         }
