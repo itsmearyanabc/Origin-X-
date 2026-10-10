@@ -69,7 +69,7 @@ export default function SignUp() {
     setError(null);
     try {
       if (response.credential) {
-        const user = await signInWithGoogle(response.credential);
+        await signInWithGoogle(response.credential);
         navigate(next ?? "/onboarding", { replace: true });
       }
     } catch (e) {

@@ -15,7 +15,7 @@ type AuthContextValue = {
   role: OrgRole | null;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<Me>;
-  signInWithGoogle: (credential: string) => Promise<Me>;
+  signInWithGoogle: (credential: string) => Promise<Me | null>;
   signUp: (fullName: string, email: string, password: string) => Promise<Me>;
   signOut: () => Promise<void>;
   reload: () => Promise<Me | null>;
@@ -93,8 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   
   const signInWithGoogle = useCallback(async (credential: string) => {
-    const { data } = await api.post<AuthResult>("/auth/google", { credential });
-    session.set(data.accessToken);
+    const data = await api.post<AuthResult>("/auth/google", { credential });
+    session.setAccessToken(data.accessToken);
     return await reload();
   }, [reload]);
 
