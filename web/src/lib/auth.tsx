@@ -15,6 +15,7 @@ type AuthContextValue = {
   role: OrgRole | null;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<Me>;
+  signInWithGoogle: (credential: string) => Promise<Me>;
   signUp: (fullName: string, email: string, password: string) => Promise<Me>;
   signOut: () => Promise<void>;
   reload: () => Promise<Me | null>;
@@ -90,6 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [finishAuth],
   );
 
+  
+  const signInWithGoogle = useCallback(async (credential: string) => {
+    const { data } = await api.post<AuthResult>("/auth/google", { credential });
+    session.set(data.accessToken);
+    return await reload();
+  }, [reload]);
+
   const signOut = useCallback(async () => {
     try {
       await api.post("/auth/logout", {}, false);
@@ -122,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: activeOrg?.role ?? null,
       isAdmin: me?.accountType === "PLATFORM_ADMIN",
       signIn,
+      signInWithGoogle,
       signUp,
       signOut,
       reload,

@@ -1,3 +1,4 @@
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
@@ -53,7 +54,7 @@ function Chooser({ onBusiness }: { onBusiness: () => void }) {
 }
 
 export default function SignUp() {
-  const { signUp, status, me } = useAuth();
+  const { signUp, signInWithGoogle, status, me } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [step, setStep] = useState<"choose" | "account">(params.get("type") === "org" || params.get("next") ? "account" : "choose");
@@ -62,6 +63,19 @@ export default function SignUp() {
   const next = safeNext(params.get("next"));
 
   if (status === "authenticated" && me && !formState.isSubmitting) return <Navigate to={next ?? homeFor(me)} replace />;
+
+  
+  const handleGoogleSuccess = async (response: any) => {
+    setError(null);
+    try {
+      if (response.credential) {
+        const user = await signInWithGoogle(response.credential);
+        navigate(next ?? "/onboarding", { replace: true });
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
 
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
@@ -126,6 +140,22 @@ export default function SignUp() {
             <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting}>
               Create account <ArrowRight className="h-4 w-4" />
             </Button>
+
+            <GoogleOAuthProvider clientId="402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com">
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
+                <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Or continue with</span></div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError("Google Sign-Up failed.")}
+                  useOneTap
+                  text="signup_with"
+                />
+              </div>
+            </GoogleOAuthProvider>
+
             <ul className="grid gap-1.5 pt-1 text-xs text-ink-500">
               {["Free plan: 100 products, 3 team members", "Your organization is reviewed by ORIGINX before it shows as verified"].map((t) => (
                 <li key={t} className="flex items-center gap-2">

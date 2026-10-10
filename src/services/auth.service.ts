@@ -1,3 +1,4 @@
+import { OAuth2Client } from 'google-auth-library';
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { config } from "../config.js";
@@ -71,6 +72,44 @@ export class AuthService {
    * Refresh-token rotation. Presenting an already-rotated token means it was stolen or replayed:
    * the whole token family is revoked and the user must sign in again.
    */
+  
+  async loginWithGoogle(token: string, ipHash?: string | null) {
+    const client = new OAuth2Client("402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com");
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: "402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com",
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) throw new Error("Invalid Google token payload");
+
+      let user = await prisma.user.findUnique({ where: { email: payload.email } });
+      
+      if (!user) {
+        const dummyPassword = await hashPassword(randomToken() + randomToken());
+        user = await prisma.user.create({
+          data: {
+            email: payload.email,
+            passwordHash: dummyPassword,
+            fullName: payload.name || "Google User",
+            emailVerifiedAt: new Date(),
+          }
+        });
+        await writeAudit({ actorUserId: user.id, action: "USER_REGISTERED_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
+      } else {
+        if (user.status !== "ACTIVE") throw new AppError("ACCOUNT_INACTIVE", "This account is not active.", 403);
+      }
+
+      await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+      await writeAudit({ actorUserId: user.id, action: "USER_LOGIN_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
+      
+      return this.issueSession(user);
+    } catch (error) {
+      console.error("Google Auth Error:", error);
+      throw new AppError("INVALID_CREDENTIALS", "Google authentication failed.", 401);
+    }
+  }
+
   async refresh(refreshToken: string) {
     if (!refreshToken) throw new AppError("INVALID_TOKEN", "Refresh token is required.", 401);
     const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashSecret(refreshToken) }, include: { user: true } });

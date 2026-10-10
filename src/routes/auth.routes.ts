@@ -49,6 +49,11 @@ function refreshTokenFrom(req: Request): string {
 
 export const authRouter = Router();
 
+authRouter.post("/google", authLimiter, async (req, res) => {
+  sendSession(req, res, await authService.loginWithGoogle(String(req.body?.credential ?? ""), clientIpHash(req)));
+});
+
+
 authRouter.post("/register", authLimiter, async (req, res) => {
   sendSession(req, res, await authService.register(req.body, clientIpHash(req)), 201);
 });
