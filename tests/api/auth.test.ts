@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { OAuth2Client } from "google-auth-library";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, as, login, PASSWORD, prisma, register } from "../helpers.js";
 
 describe("authentication", () => {
@@ -123,5 +124,44 @@ describe("authentication", () => {
     await prisma.user.update({ where: { id: s.userId }, data: { status: "SUSPENDED", sessionVersion: { increment: 1 } } });
     expect((await api().get("/api/v1/auth/me").set(as(s))).status).toBe(401);
     await expect(login(s.email)).rejects.toThrow();
+  });
+
+  describe("Google sign-in", () => {
+    // Google cannot mint ID tokens in a test, so only the signature check is stubbed; everything
+    // after it (account matching, sessions, audit) runs for real.
+    const googleSays = (payload: Record<string, unknown>) =>
+      vi.spyOn(OAuth2Client.prototype, "verifyIdToken").mockResolvedValue({ getPayload: () => payload } as never);
+    afterEach(() => vi.restoreAllMocks());
+
+    it("refuses Google accounts whose email Google has not verified — no takeover of an existing user", async () => {
+      const victim = await register("google-victim");
+      googleSays({ email: victim.email, email_verified: false, name: "Attacker" });
+      const res = await api().post("/api/v1/auth/google").set("X-Refresh-Transport", "body").send({ credential: "stub" });
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe("GOOGLE_EMAIL_UNVERIFIED");
+      expect(res.body.data).toBeUndefined();
+    });
+
+    it("signs in an existing user with a Google-verified email and creates new users", async () => {
+      const existing = await register("google-existing");
+      googleSays({ email: existing.email, email_verified: true, name: "Existing" });
+      const res = await api().post("/api/v1/auth/google").set("X-Refresh-Transport", "body").send({ credential: "stub" });
+      expect(res.status).toBe(200);
+      expect(res.body.data.user.id).toBe(existing.userId);
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: existing.userId } })).emailVerifiedAt).not.toBeNull();
+
+      const email = `google-new-${Date.now()}@test.originx`;
+      googleSays({ email, email_verified: true, name: "New Googler" });
+      const created = await api().post("/api/v1/auth/google").set("X-Refresh-Transport", "body").send({ credential: "stub" });
+      expect(created.status).toBe(200);
+      expect((await prisma.user.findUniqueOrThrow({ where: { email } })).fullName).toBe("New Googler");
+    });
+
+    it("rejects tokens Google does not accept", async () => {
+      vi.spyOn(OAuth2Client.prototype, "verifyIdToken").mockRejectedValue(new Error("Wrong recipient, payload audience != requiredAudience"));
+      const res = await api().post("/api/v1/auth/google").send({ credential: "forged" });
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe("INVALID_CREDENTIALS");
+    });
   });
 });

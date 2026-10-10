@@ -1,4 +1,4 @@
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, type TokenPayload } from "google-auth-library";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { config } from "../config.js";
@@ -40,6 +40,8 @@ function publicUser(user: SessionUser) {
   };
 }
 
+const googleClient = new OAuth2Client(config.googleClientId);
+
 export class AuthService {
   async register(input: unknown, ipHash?: string | null) {
     const data = registerSchema.parse(input);
@@ -73,41 +75,37 @@ export class AuthService {
    * the whole token family is revoked and the user must sign in again.
    */
   
+  /**
+   * Google Sign-In (ID token from Google Identity Services). Only Google-*verified* addresses are
+   * accepted: an unverified Google account can carry someone else's email, and matching it to an
+   * existing ORIGINX user by email would hand over that account.
+   */
   async loginWithGoogle(token: string, ipHash?: string | null) {
-    const client = new OAuth2Client("402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com");
+    let payload: TokenPayload | undefined;
     try {
-      const ticket = await client.verifyIdToken({
-        idToken: token,
-        audience: "402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com",
-      });
-      const payload = ticket.getPayload();
-      if (!payload || !payload.email) throw new Error("Invalid Google token payload");
-
-      let user = await prisma.user.findUnique({ where: { email: payload.email } });
-      
-      if (!user) {
-        const dummyPassword = await hashPassword(randomToken() + randomToken());
-        user = await prisma.user.create({
-          data: {
-            email: payload.email,
-            passwordHash: dummyPassword,
-            fullName: payload.name || "Google User",
-            emailVerifiedAt: new Date(),
-          }
-        });
-        await writeAudit({ actorUserId: user.id, action: "USER_REGISTERED_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
-      } else {
-        if (user.status !== "ACTIVE") throw new AppError("ACCOUNT_INACTIVE", "This account is not active.", 403);
-      }
-
-      await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-      await writeAudit({ actorUserId: user.id, action: "USER_LOGIN_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
-      
-      return this.issueSession(user);
+      const ticket = await googleClient.verifyIdToken({ idToken: token, audience: config.googleClientId });
+      payload = ticket.getPayload();
     } catch (error) {
-      console.error("Google Auth Error:", error);
+      console.error(JSON.stringify({ level: "warn", msg: "Google ID token rejected", error: error instanceof Error ? error.message : String(error) }));
       throw new AppError("INVALID_CREDENTIALS", "Google authentication failed.", 401);
     }
+    if (!payload?.email || payload.email_verified !== true) {
+      throw new AppError("GOOGLE_EMAIL_UNVERIFIED", "Your Google account's email address is not verified by Google.", 401);
+    }
+    const email = payload.email.trim().toLowerCase();
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email, passwordHash: await hashPassword(randomToken() + randomToken()), fullName: payload.name || "Google User", emailVerifiedAt: new Date() },
+      });
+      await writeAudit({ actorUserId: user.id, action: "USER_REGISTERED_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
+    } else if (user.status !== "ACTIVE") {
+      throw new AppError("ACCOUNT_INACTIVE", "This account is not active.", 403);
+    }
+    // Google has verified this address, so it also counts as a verified ORIGINX email.
+    user = await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), ...(user.emailVerifiedAt ? {} : { emailVerifiedAt: new Date() }) } });
+    await writeAudit({ actorUserId: user.id, action: "USER_LOGIN_GOOGLE", resourceType: "User", resourceId: user.id, ipHash });
+    return this.issueSession(user);
   }
 
   async refresh(refreshToken: string) {

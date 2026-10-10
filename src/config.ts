@@ -78,6 +78,8 @@ export const config = {
     cloneScanThreshold: Number(process.env.CLONE_SCAN_THRESHOLD ?? 25),
     unknownTokenLimitPer10Min: Number(process.env.UNKNOWN_TOKEN_LIMIT ?? 20),
   },
+  /** Google Identity Services OAuth client ID (public; must match the web app's client ID). */
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com",
   /** Outgoing email over SMTP (password reset, email verification, invitations). */
   mail: {
     host: process.env.SMTP_HOST ?? "",
