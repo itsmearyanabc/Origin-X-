@@ -1582,6 +1582,79 @@ class Component extends DCLogic {
     }
   })();
 </script>
+
+    <!-- Chatbot Widget -->
+    <div id="tf-chat-widget" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; font-family: sans-serif;">
+      <div id="tf-chat-window" style="display: none; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; height: 500px; flex-direction: column; border: 1px solid #eee; overflow: hidden;">
+        <div style="background: #2563eb; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: bold;">Web Search Assistant</h3>
+          <button onclick="document.getElementById('tf-chat-window').style.display='none'; document.getElementById('tf-chat-button').style.display='flex';" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
+        </div>
+        <div id="tf-chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; background: #f9fafb; color: #1f2937; display: flex; flex-direction: column; gap: 12px;">
+          <p style="text-align: center; font-size: 14px; color: #6b7280; margin-top: 40px;">Ask me to search the web for anything!</p>
+        </div>
+        <form id="tf-chat-form" style="padding: 12px; background: white; border-top: 1px solid #e5e7eb; display: flex; gap: 8px;">
+          <input type="text" id="tf-chat-input" placeholder="Type a search query..." required style="flex: 1; padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 9999px; outline: none; font-size: 14px; color: black;" />
+          <button type="submit" style="background: #2563eb; color: white; border: none; border-radius: 9999px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center;">↑</button>
+        </form>
+      </div>
+      <button id="tf-chat-button" onclick="document.getElementById('tf-chat-window').style.display='flex'; document.getElementById('tf-chat-button').style.display='none';" style="background: #2563eb; color: white; border: none; border-radius: 50%; width: 56px; height: 56px; box-shadow: 0 4px 12px rgba(37,99,235,0.4); cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center;">💬</button>
+    </div>
+    
+    <script>
+      document.getElementById('tf-chat-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const input = document.getElementById('tf-chat-input');
+        const query = input.value.trim();
+        if (!query) return;
+        
+        const msgs = document.getElementById('tf-chat-messages');
+        
+        // Add User Message
+        msgs.innerHTML += `<div style="display: flex; justify-content: flex-end;"><div style="max-width: 85%; padding: 12px; border-radius: 12px; font-size: 14px; background: #2563eb; color: white; border-bottom-right-radius: 0;">${query}</div></div>`;
+        input.value = '';
+        msgs.scrollTop = msgs.scrollHeight;
+        
+        // Add Loading
+        const loadingId = 'loading-' + Date.now();
+        msgs.innerHTML += `<div id="${loadingId}" style="display: flex; justify-content: flex-start;"><div style="max-width: 85%; padding: 12px; border-radius: 12px; font-size: 12px; background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 0; color: #6b7280;">Searching...</div></div>`;
+        msgs.scrollTop = msgs.scrollHeight;
+        
+        try {
+          // WARNING: API key exposed in frontend.
+          const res = await fetch('https://agent.tinyfish.ai/v1/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer sk-tinyfish-qTthlASTnsi4_naSkSd_CcZbnwKrxHLE'
+            },
+            body: JSON.stringify({ query: query, purpose: "Answering a user query on the website" })
+          });
+          const data = await res.json();
+          document.getElementById(loadingId).remove();
+          
+          if (!data.results || data.results.length === 0) {
+            msgs.innerHTML += `<div style="display: flex; justify-content: flex-start;"><div style="max-width: 85%; padding: 12px; border-radius: 12px; font-size: 14px; background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 0; color: #1f2937;">I couldn't find any information on that.</div></div>`;
+            return;
+          }
+          
+          const topResults = data.results.slice(0, 3).map(r => 
+            `<div style="margin-bottom: 12px;">
+              <a href="${r.url}" target="_blank" style="font-weight: bold; color: #3b82f6; text-decoration: none;">${r.title}</a>
+              <p style="font-size: 12px; color: #4b5563; margin-top: 4px;">${r.snippet}</p>
+            </div>`
+          ).join('');
+          
+          const replyHtml = `<div style="font-size: 14px;"><p style="margin-bottom: 12px;">Here is what I found on the web:</p>${topResults}</div>`;
+          msgs.innerHTML += `<div style="display: flex; justify-content: flex-start;"><div style="max-width: 85%; padding: 12px; border-radius: 12px; font-size: 14px; background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 0; color: #1f2937;">${replyHtml}</div></div>`;
+          msgs.scrollTop = msgs.scrollHeight;
+        } catch (err) {
+          document.getElementById(loadingId).remove();
+          msgs.innerHTML += `<div style="display: flex; justify-content: flex-start;"><div style="max-width: 85%; padding: 12px; border-radius: 12px; font-size: 14px; background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 0; color: #1f2937;">Error connecting to search API.</div></div>`;
+        }
+      });
+    </script>
+    
 </body>
 
 </html>
