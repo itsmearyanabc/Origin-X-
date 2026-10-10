@@ -115,7 +115,6 @@ export default function SignUp() {
           </motion.div>
         ) : (
           <motion.form key="account" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={onSubmit} className="space-y-5" noValidate>
-            {error && <Alert tone="bad">{error}</Alert>}
             <Field label="Full name" error={formState.errors.fullName?.message}>
               {(id) => <Input id={id} autoComplete="name" autoFocus aria-invalid={Boolean(formState.errors.fullName)} {...register("fullName")} />}
             </Field>
@@ -145,6 +144,8 @@ export default function SignUp() {
               </span>
             </label>
             {formState.errors.terms && <p className="-mt-3 text-xs font-medium text-bad-600">{formState.errors.terms.message}</p>}
+            {/* Next to the button: on a phone an alert at the top of this long form is off-screen. */}
+            {error && <Alert tone="bad">{error}</Alert>}
             <Turnstile ref={humanCheck} action="signup" onToken={setHumanToken} />
             <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} disabled={Boolean(humanCheckKey) && !humanToken}>
               Create account <ArrowRight className="h-4 w-4" />

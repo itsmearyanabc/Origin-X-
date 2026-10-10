@@ -30,6 +30,12 @@ export async function verifyTurnstile(token: string, action: string, remoteIp?: 
     // Fail closed: without a verdict we cannot tell a person from a bot.
     throw new AppError("HUMAN_CHECK_UNAVAILABLE", "We couldn't complete the security check. Please try again.", 503);
   }
+  const codes = result["error-codes"] ?? [];
+  if (codes.includes("invalid-input-secret") || codes.includes("missing-input-secret")) {
+    // Our configuration is wrong, not the visitor: every token will fail until it is fixed.
+    console.error(JSON.stringify({ level: "error", msg: "turnstile: TURNSTILE_SECRET_KEY rejected by Cloudflare — copy the widget's secret key into .env.production", errorCodes: codes }));
+    throw new AppError("HUMAN_CHECK_UNAVAILABLE", "The security check is misconfigured on our side. Please try again later.", 503);
+  }
   if (!result.success) {
     console.warn(JSON.stringify({ level: "warn", msg: "turnstile: token rejected", action, errorCodes: result["error-codes"] ?? [], sentRemoteIp: Boolean(remoteIp) }));
     throw new AppError("HUMAN_CHECK_FAILED", "The security check failed or expired. Please try again.", 403, result["error-codes"]);

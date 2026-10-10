@@ -55,6 +55,14 @@ describe("Cloudflare Turnstile human check", () => {
     expect(wrongForm.status).toBe(403);
   });
 
+  it("reports a wrong secret key as our misconfiguration, not the visitor's failure", async () => {
+    cloudflareSays({ success: false, "error-codes": ["invalid-input-secret"] });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await api().post("/api/v1/auth/register").send({ email: `t-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Human", turnstileToken: "real-token" });
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe("HUMAN_CHECK_UNAVAILABLE");
+  });
+
   it("lets a verified human through and sends the secret and token to Cloudflare", async () => {
     config.turnstile.secretKey = ""; // create the account with the check off, then turn it back on
     const s = await register("turnstile-ok");
