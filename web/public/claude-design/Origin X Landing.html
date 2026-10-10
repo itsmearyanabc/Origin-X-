@@ -23,7 +23,29 @@
   <div id="__bundler_loading">Unpacking...</div>
 
   <script>
-    
+
+// Keep the design export's visual interactions, but send its calls to action
+// into the real ORIGINX application. This listener is attached to window so it
+// survives the document swap performed by the export bootloader.
+window.addEventListener('click', function(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  const link = target && target.closest('a');
+  if (!link) return;
+
+  const route = link.getAttribute('data-route');
+  if (route && route.startsWith('/') && !route.startsWith('//')) {
+    event.preventDefault();
+    window.location.assign(route === '/sign-up' ? '/sign-up?type=org' : route);
+    return;
+  }
+
+  const href = link.getAttribute('href') || '';
+  if (/^(\.\/)?Verify\.dc\.html(?:[?#].*)?$/i.test(href)) {
+    event.preventDefault();
+    window.location.assign('/verify');
+  }
+}, true);
+
 document.addEventListener('DOMContentLoaded', async function() {
   const loading = document.getElementById('__bundler_loading');
   function setStatus(msg) { if (loading) loading.textContent = msg; }
