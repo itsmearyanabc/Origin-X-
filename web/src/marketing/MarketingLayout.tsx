@@ -79,10 +79,10 @@ function Navbar() {
             ) : (
               <>
                 <Link to="/sign-in" className={buttonClass("secondary", "md")}>
-                  Sign in
+                  Sign-in
                 </Link>
                 <Link to="/sign-up" className={buttonClass("primary", "md")}>
-                  Get started <ArrowRight className="h-4 w-4" />
+                  Sign-up <ArrowRight className="h-4 w-4" />
                 </Link>
               </>
             )}
@@ -113,10 +113,10 @@ function Navbar() {
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       <Link to="/sign-in" className={buttonClass("secondary", "lg")}>
-                        Sign in
+                        Sign-in
                       </Link>
                       <Link to="/sign-up" className={buttonClass("primary", "lg")}>
-                        Get started
+                        Sign-up
                       </Link>
                     </div>
                   )}
