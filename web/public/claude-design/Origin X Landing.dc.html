@@ -1551,16 +1551,31 @@ class Component extends DCLogic {
     if (typeof ModelViewer !== 'undefined') {
       const viewer = ModelViewer({
         pxNotRatio: true,
-        width: 120,
-        height: 120,
+        width: 400,
+        height: 400,
         followMouse: true
       });
       if (viewer && viewer.container) {
-        viewer.container.style.position = 'fixed';
-        viewer.container.style.bottom = '20px';
-        viewer.container.style.right = '20px';
-        viewer.container.style.zIndex = '9999';
         viewer.container.style.pointerEvents = 'none';
+        const hero = document.querySelector('section[data-screen-label="Hero"]');
+        if (hero) {
+            hero.style.position = 'relative';
+            viewer.container.style.position = 'absolute';
+            // Place it in the center background
+            viewer.container.style.top = '50%';
+            viewer.container.style.left = '50%';
+            viewer.container.style.transform = 'translate(-50%, -50%)';
+            viewer.container.style.zIndex = '0';
+            viewer.container.style.opacity = '0.9'; // subtle behind text
+            hero.insertBefore(viewer.container, hero.firstChild);
+        } else {
+            viewer.container.style.position = 'fixed';
+            viewer.container.style.top = '50%';
+            viewer.container.style.left = '50%';
+            viewer.container.style.transform = 'translate(-50%, -50%)';
+            viewer.container.style.zIndex = '-1';
+            document.body.appendChild(viewer.container);
+        }
       }
     } else {
       setTimeout(initFox, 100);
