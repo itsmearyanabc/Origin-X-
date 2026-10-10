@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/styles.css">
+<script src="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/_ds_bundle.js"></script>
+<style>body{margin:0;background:#F7F8FA;font-family:var(--font-body);color:#172033}a{color:#2864DC}a:hover{color:#F07824}</style>
+</helmet>
+<div data-mascot-scope="1" style="min-height:100vh;display:grid;grid-template-rows:auto minmax(640px,1fr);">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;padding:28px 32px 0;">
+    <div style="font-family:var(--font-heading);font-size:28px;white-space:nowrap;">ORIGIN<span style="color:#F07824;">X</span> origami fox</div>
+    <div style="font-size:14px;color:#475467;max-width:520px;text-wrap:pretty;">It folds itself up on load. Move the pointer and it follows. Click to make it flick its ears. When the pointer leaves, it looks around on its own.</div>
+  </div>
+  <div style="position:relative;min-height:640px;overflow:hidden;">
+    <div style="position:absolute;left:50%;top:50%;width:min(560px,86%);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:#E6EEFB;"></div>
+    <x-import component-from-global-scope="ox-origami-fox" from="./origami-fox.js" facing="left" style="position:absolute;inset:0;" hint-size="100%,100%"></x-import>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

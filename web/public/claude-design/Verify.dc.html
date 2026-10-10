@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/styles.css">
+<script src="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#F7F8FA;color:#172033;font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+a{color:#2864DC;text-decoration:none}a:hover{color:#F07824}
+*:focus-visible{outline:2px solid #F07824;outline-offset:2px}
+input::placeholder{color:#98A2B3}
+</style>
+</helmet>
+<div style="min-height:100vh;position:relative;overflow:hidden;">
+  <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#FDE3CF;left:50%;top:-420px;transform:translateX(-50%);"></div>
+  <header style="position:relative;max-width:640px;margin:0 auto;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <a href="Origin X Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:#172033;">
+      <img src="assets/originx-logo.png" alt="ORIGINX" style="height:36px;width:auto;display:block;"></img>
+    </a>
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <a href="Origin X Landing.dc.html" style="font-size:14px;font-weight:700;color:#475467;" style-hover="color:#D9661A;">About ORIGINX</a>
+    </sc-if>
+    <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{ goHome }}" style="padding:10px 16px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;font:700 14px var(--font-body);color:#172033;cursor:pointer;" style-hover="border-color:#172033;">Scan another</button>
+    </sc-if>
+  </header>
+
+  <main style="position:relative;max-width:640px;margin:0 auto;padding:0 20px 64px;">
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:28px;padding-top:20px;">
+        <div data-in="0" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;">
+          <span style="width:68px;height:68px;border-radius:50%;background:#F07824;display:grid;place-items:center;color:#172033;">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"></path></svg>
+          </span>
+          <h1 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(36px,7vw,52px);line-height:1;">Verify a product</h1>
+          <p style="margin:0;font-size:17px;line-height:1.55;color:#475467;max-width:440px;">Check where it came from, who handled it, and whether it's genuine — in seconds.</p>
+        </div>
+
+        <div data-in="1" style="background:#fff;border:1px solid #E4E7EC;border-radius:32px;padding:clamp(18px,4vw,28px);box-shadow:0 24px 60px -36px rgba(23,32,51,.4);display:flex;flex-direction:column;gap:20px;">
+          <sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div style="position:relative;aspect-ratio:1;border-radius:26px;overflow:hidden;background:#172033;">
+                <video ref="{{ videoRef }}" muted="{{ true }}" playsInline="{{ true }}" style="width:100%;height:100%;object-fit:cover;"></video>
+                <div style="position:absolute;inset:40px;border-radius:26px;border:2px solid rgba(255,255,255,.7);pointer-events:none;"></div>
+                <div ref="{{ scanLineRef }}" style="position:absolute;left:48px;right:48px;top:15%;height:3px;border-radius:999px;background:#F07824;box-shadow:0 0 18px 4px rgba(240,120,36,.6);pointer-events:none;"></div>
+              </div>
+              <sc-if value="{{ camError }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 16px;border-radius:18px;background:#FEF0C7;color:#93370D;font-size:14px;line-height:1.5;">{{ camErrorText }}</div>
+              </sc-if>
+              <sc-if value="{{ camOk }}" hint-placeholder-val="{{ true }}">
+                <p style="margin:0;text-align:center;font-size:14px;color:#475467;">Point your camera at the ORIGINX QR code on the packaging.</p>
+              </sc-if>
+              <button type="button" onClick="{{ stopScan }}" style="padding:14px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;font:700 15px var(--font-body);color:#172033;cursor:pointer;" style-hover="border-color:#172033;">Close camera</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ notScanning }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ startScan }}" style="display:flex;justify-content:center;align-items:center;gap:10px;padding:17px;border:0;border-radius:999px;background:#F07824;color:#172033;font:700 17px var(--font-body);cursor:pointer;transition:background .2s ease;" style-hover="background:#F48F45;" style-active="background:#D9661A;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+              <span>Scan QR code</span>
+            </button>
+            <div style="display:flex;align-items:center;gap:12px;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;">
+              <span style="flex:1;height:1px;background:#E4E7EC;"></span><span>or enter the code</span><span style="flex:1;height:1px;background:#E4E7EC;"></span>
+            </div>
+            <form onSubmit="{{ submit }}" style="display:flex;flex-direction:column;gap:12px;">
+              <input aria-label="Verification code or link" value="{{ code }}" onChange="{{ onCode }}" placeholder="Paste the code or link" autoCapitalize="off" autoCorrect="off" spellCheck="false" style="padding:16px 20px;border-radius:999px;border:1.5px solid {{ inputBorder }};background:#fff;font:500 15px ui-monospace,Menlo,monospace;color:#172033;outline:none;" style-focus="border-color:#F07824;"></input>
+              <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+                <p style="margin:0;padding:0 8px;font-size:14px;color:#B42318;">{{ error }}</p>
+              </sc-if>
+              <button type="submit" disabled="{{ submitDisabled }}" style="padding:16px;border:0;border-radius:999px;background:#172033;color:#fff;font:700 16px var(--font-body);cursor:pointer;opacity:{{ submitOpacity }};" style-hover="background:#24304A;">Verify</button>
+            </form>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:22px;background:#F7F8FA;">
+              <span style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;">Preview sample codes</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <sc-for list="{{ samples }}" as="s" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ s.use }}" style="padding:7px 12px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;font:700 13px var(--font-body);color:#172033;cursor:pointer;" style-hover="border-color:#F07824;background:#FFF4EC;">{{ s.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div data-in="2" style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ assurances }}" as="a" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;font-size:15px;color:#475467;">
+              <span style="width:32px;height:32px;border-radius:50%;background:#fff;border:1px solid #E4E7EC;display:grid;place-items:center;color:#D9661A;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span>{{ a }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+      <div aria-busy="true" aria-label="Verifying product" style="display:flex;flex-direction:column;gap:14px;padding-top:12px;">
+        <div style="background:#fff;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <div style="display:flex;gap:14px;align-items:center;">
+            <div data-skel="1" style="width:56px;height:56px;border-radius:50%;background:#F2F4F7;"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;"><div data-skel="1" style="height:12px;width:40%;border-radius:999px;background:#F2F4F7;"></div><div data-skel="1" style="height:20px;width:80%;border-radius:999px;background:#F2F4F7;"></div></div>
+          </div>
+          <p style="margin:0;text-align:center;font-size:14px;font-weight:600;color:#475467;">Checking identity, history and blockchain proofs…</p>
+        </div>
+        <div data-skel="1" style="height:160px;border-radius:28px;background:#fff;"></div>
+        <div data-skel="1" style="height:220px;border-radius:28px;background:#fff;"></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px;padding-top:8px;">
+        <div data-in="0" role="{{ r.role }}" style="position:relative;overflow:hidden;padding:clamp(20px,4vw,28px);border-radius:30px;background:{{ r.bg }};color:{{ r.fg }};display:flex;gap:16px;align-items:flex-start;">
+          <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.12);right:-60px;top:-80px;"></div>
+          <span style="position:relative;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:24px;font-weight:800;flex-shrink:0;">{{ r.icon }}</span>
+          <div style="position:relative;display:flex;flex-direction:column;gap:6px;">
+            <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;opacity:.85;">{{ r.title }}</span>
+            <span style="font-family:var(--font-heading);font-size:clamp(22px,4vw,28px);line-height:1.15;">{{ r.headline }}</span>
+            <span style="font-size:15px;line-height:1.5;opacity:.92;">{{ r.detail }}</span>
+          </div>
+        </div>
+
+        <sc-for list="{{ r.warnings }}" as="w" hint-placeholder-count="0">
+          <div style="padding:14px 18px;border-radius:20px;background:#FEF0C7;color:#93370D;font-size:14px;line-height:1.5;">{{ w }}</div>
+        </sc-for>
+
+        <sc-if value="{{ r.hasRecall }}" hint-placeholder-val="{{ false }}">
+          <div data-in="1" style="background:#fff;border:1px solid #F4C7C3;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:8px;">
+            <span style="font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#B42318;">Recall notice</span>
+            <span style="font-weight:700;color:#B42318;">Active · since 02 Oct 2026</span>
+            <span style="font-size:16px;line-height:1.5;">{{ r.recallReason }}</span>
+            <span style="font-size:14px;color:#475467;">Affected batch: B-2041. Stop using this product and contact the seller or Example Pharma for instructions.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ r.hasPassport }}" hint-placeholder-val="{{ true }}">
+          <div data-in="1" style="background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:18px;">
+            <span style="font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;">Product</span>
+            <div style="display:flex;gap:18px;align-items:flex-start;justify-content:space-between;">
+              <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                <span style="font-family:var(--font-heading);font-size:26px;line-height:1.1;">Amoxicillin 250 mg</span>
+                <span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;color:#475467;">Example Pharma <span style="padding:3px 10px;border-radius:999px;background:{{ r.brandBg }};color:{{ r.brandFg }};font-size:12px;font-weight:700;">{{ r.brandLabel }}</span></span>
+              </div>
+              <div style="width:88px;height:88px;border-radius:50%;background:conic-gradient({{ r.ring }} 0 {{ r.scorePct }}%,#F2F4F7 0);display:grid;place-items:center;flex-shrink:0;">
+                <div style="width:70px;height:70px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:var(--font-heading);font-size:26px;line-height:1;">{{ r.score }}</span><span style="font-size:10px;color:#475467;">trust</span></div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <sc-for list="{{ r.fields }}" as="f" hint-placeholder-count="4">
+                <div style="padding:10px 12px;border-radius:16px;background:#F7F8FA;display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-size:12px;color:#475467;">{{ f.k }}</span><span style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.v }}</span></div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}">
+              <p style="margin:0;padding:12px 14px;border-radius:16px;background:#FDECEC;color:#A12A2A;font-size:13px;font-weight:600;">{{ r.note }}</p>
+            </sc-if>
+          </div>
+
+          <div data-in="2" style="background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:10px;">
+            <span style="font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;padding-bottom:4px;">Verification checks</span>
+            <sc-for list="{{ r.checks }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;border:1px solid #E4E7EC;">
+                <span style="width:32px;height:32px;border-radius:50%;background:{{ c.bg }};color:{{ c.fg }};display:grid;place-items:center;font-weight:800;font-size:14px;flex-shrink:0;">{{ c.icon }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0;flex:1;"><span style="font-weight:700;font-size:15px;">{{ c.label }}</span><span style="font-size:13px;color:#475467;">{{ c.detail }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div data-in="3" style="background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:4px;">
+            <span style="font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;padding-bottom:12px;">Journey</span>
+            <sc-for list="{{ r.journey }}" as="j" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:32px minmax(0,1fr);gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                  <span style="width:32px;height:32px;border-radius:50%;background:{{ j.dotBg }};color:{{ j.dotFg }};display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0;">{{ j.n }}</span>
+                  <sc-if value="{{ j.line }}" hint-placeholder-val="{{ true }}"><span style="flex:1;width:2px;background:#E4E7EC;min-height:18px;"></span></sc-if>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:3px;padding-bottom:18px;min-width:0;">
+                  <span style="font-weight:700;font-size:15px;">{{ j.type }}</span>
+                  <span style="font-size:13px;color:#475467;">{{ j.org }} · {{ j.loc }} · {{ j.date }}</span>
+                  <span style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:500 11px ui-monospace,Menlo,monospace;color:#475467;">
+                    <span>{{ j.hash }}</span>
+                    <span style="padding:2px 8px;border-radius:999px;background:{{ j.proofBg }};color:{{ j.proofFg }};font-family:var(--font-body);font-weight:700;">{{ j.proof }}</span>
+                  </span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div data-in="4" style="background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:10px;">
+            <span style="font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;padding-bottom:4px;">Blockchain</span>
+            <sc-for list="{{ r.chain }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;gap:16px;font-size:14px;"><span style="color:#475467;">{{ c.k }}</span><span style="font:600 13px ui-monospace,Menlo,monospace;text-align:right;">{{ c.v }}</span></div>
+            </sc-for>
+            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:#475467;">Only cryptographic hashes are stored on the blockchain. ORIGINX re-read them for this check.</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ r.unknown }}" hint-placeholder-val="{{ false }}">
+          <div data-in="1" style="background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;">
+            <p style="margin:0;font-size:16px;line-height:1.55;color:#475467;">This code doesn't match any ORIGINX product passport. Check that you scanned the ORIGINX QR code, or try entering the code again.</p>
+            <button type="button" onClick="{{ goHome }}" style="padding:14px 24px;border:0;border-radius:999px;background:#F07824;color:#172033;font:700 15px var(--font-body);cursor:pointer;" style-hover="background:#F48F45;">Scan again</button>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px;">
+          <button type="button" onClick="{{ reverify }}" style="padding:10px 16px;border:0;border-radius:999px;background:transparent;font:700 14px var(--font-body);color:#475467;cursor:pointer;" style-hover="background:#fff;color:#172033;">Re-verify now</button>
+          <span style="font-size:12px;color:#475467;">Checked {{ checkedAt }} · <a href="Origin X Landing.dc.html" style="font-weight:700;color:#475467;">Report a problem</a> · Sample data</span>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const SAMPLES = {
+  ox_sample_authentic_7F3K2041: 'AUTHENTIC',
+  ox_sample_recalled_B2041xx: 'RECALLED',
+  ox_sample_counterfeit_7F3K: 'COUNTERFEIT',
+  ox_sample_pending_proof_05: 'PENDING',
+};
+const extractToken = (raw) => {
+  const text = (raw || '').trim();
+  const m = text.match(/\/verify\/([A-Za-z0-9_-]{16,64})/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{16,64}$/.test(text) ? text : null;
+};
+const EVENTS = [
+  ['Registered', 'Example Pharma', 'Delhi', '12 Mar 2026'],
+  ['Manufactured', 'Example Pharma', 'Plant 1, Delhi', '14 Mar 2026'],
+  ['Quality approved', 'Example Pharma', 'QC Lab, Delhi', '16 Mar 2026'],
+  ['Custody → Example Logistics', 'Example Logistics', 'Delhi Hub', '19 Mar 2026'],
+  ['Warehouse received', 'Example Distributor', 'Gurugram', '21 Mar 2026'],
+];
+const HASHES = ['3fa91c…e210', 'b7d402…19ac', '0c55e8…7d3f', '9e12aa…4b60', '9c41e2…a07b'];
+const ok = (label, detail) => ({ label, detail, icon: '✓', bg: '#E7F6EE', fg: '#1F8A5B' });
+const bad = (label, detail) => ({ label, detail, icon: '✕', bg: '#FDECEC', fg: '#B42318' });
+const wait = (label, detail) => ({ label, detail, icon: '…', bg: '#FEF0C7', fg: '#93370D' });
+
+function result(state) {
+  const base = {
+    warnings: [], hasRecall: false, hasPassport: true, unknown: false, hasNote: false, note: '',
+    brandBg: '#E7F6EE', brandFg: '#14663F', brandLabel: 'Verified brand', ring: '#F07824', score: 92, scorePct: 92,
+    fields: [{ k: 'Product ID', v: 'OX-7F3K-2041' }, { k: 'Batch', v: 'B-2041' }, { k: 'Origin', v: 'Plant 1, Delhi, IN' }, { k: 'Made / Expires', v: 'Mar 2026 / Mar 2028' }],
+    chain: [{ k: 'Network', v: 'EVM testnet' }, { k: 'Contract', v: '0x4a1f…c09e' }, { k: 'Status', v: 'Confirmed' }],
+    journey: EVENTS.map(([type, org, loc, date], i) => ({ n: i + 1, type, org, loc, date, hash: HASHES[i], proof: 'Anchored', proofBg: '#E7F6EE', proofFg: '#14663F', dotBg: '#FDE3CF', dotFg: '#9A440D', line: i < EVENTS.length - 1 })),
+  };
+  if (state === 'AUTHENTIC') return { ...base, role: 'status', bg: '#1F8A5B', fg: '#fff', icon: '✓', title: 'Authentic product', headline: 'Amoxicillin 250 mg is genuine.', detail: 'Identity, history and blockchain proofs all match.', checks: [ok('Identity', 'Matches the original registration'), ok('History', '5 of 5 events verified'), ok('Blockchain proof', '5 anchors match the chain')] };
+  if (state === 'PENDING') {
+    const j = base.journey.map((e, i) => (i === 4 ? { ...e, proof: 'Pending', proofBg: '#FEF0C7', proofFg: '#93370D' } : e));
+    return { ...base, journey: j, role: 'status', bg: '#E3A008', fg: '#172033', icon: '!', title: 'Could not fully verify', headline: 'History checks out. One proof is still pending.', detail: 'The latest event has not been anchored on-chain yet. It is not shown as confirmed until it is.', warnings: ['Blockchain anchor for event #5 is pending.'], score: 84, scorePct: 84, chain: [{ k: 'Network', v: 'EVM testnet' }, { k: 'Contract', v: '0x4a1f…c09e' }, { k: 'Status', v: 'Pending' }], checks: [ok('Identity', 'Matches the original registration'), ok('History', '5 of 5 events verified'), wait('Blockchain proof', '4 of 5 anchors confirmed · 1 pending')] };
+  }
+  if (state === 'RECALLED') {
+    const j = base.journey.concat([{ n: 6, type: 'Recall initiated', org: 'Example Pharma', loc: 'Delhi', date: '02 Oct 2026', hash: '51be07…c3d9', proof: 'Anchored', proofBg: '#E7F6EE', proofFg: '#14663F', dotBg: '#FDECEC', dotFg: '#B42318', line: false }]).map((e, i, a) => ({ ...e, line: i < a.length - 1 }));
+    return { ...base, journey: j, role: 'alert', bg: '#B42318', fg: '#fff', icon: '!', title: 'Recalled — do not use', headline: 'Batch B-2041 has been recalled.', detail: 'Every unit in this batch is marked recalled and the status is anchored on-chain.', hasRecall: true, recallReason: 'Sample recall reason: packaging seal failure found during distributor inspection.', score: 38, scorePct: 38, ring: '#B42318', checks: [ok('Identity', 'Matches the original registration'), ok('History', '6 of 6 events verified'), ok('Recall status', 'Anchored on-chain')] };
+  }
+  if (state === 'COUNTERFEIT') return { ...base, role: 'alert', bg: '#B42318', fg: '#fff', icon: '✕', title: 'Potential counterfeit', headline: 'This identity was already registered by another organization.', detail: 'This record is quarantined and the genuine owner has been alerted.', brandBg: '#FEF0C7', brandFg: '#93370D', brandLabel: 'Unverified organization', score: 0, scorePct: 0, ring: '#B42318', hasNote: true, note: 'Trust score withheld: identity collision with an earlier registration.', journey: [], chain: [{ k: 'Network', v: 'EVM testnet' }, { k: 'Contract', v: '0x4a1f…c09e' }, { k: 'Status', v: 'No matching anchor' }], checks: [bad('Identity', 'Conflicts with an existing product'), bad('History', 'Quarantined record'), bad('Blockchain proof', 'No matching anchor')] };
+  return { ...base, role: 'status', bg: '#344054', fg: '#fff', icon: '?', title: 'Not found', headline: 'We couldn\u2019t find this product.', detail: 'No ORIGINX passport matches this code.', hasPassport: false, unknown: true, checks: [], journey: [], fields: [], chain: [] };
+}
+
+class Component extends DCLogic {
+  state = { view: 'home', code: '', error: null, scanning: false, camErr: null, token: null, checkedAt: '' };
+  videoRef = React.createRef();
+  scanLineRef = React.createRef();
+
+  componentDidMount() {
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.animateIn();
+  }
+  componentWillUnmount() { this.stopCamera(); clearTimeout(this.lt); }
+  componentDidUpdate() {
+    if (this._lastView !== this.state.view) { this._lastView = this.state.view; this.animateIn(); }
+  }
+  animateIn() {
+    if (this.reduced) return;
+    requestAnimationFrame(() => {
+      document.querySelectorAll('[data-in]').forEach((el) => el.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 650, delay: (+el.getAttribute('data-in')) * 70, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' }));
+      document.querySelectorAll('[data-skel]').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0.5 }, { opacity: 1 }], { duration: 1200, iterations: Infinity }));
+    });
+  }
+  verify(token) {
+    this.stopCamera();
+    window.scrollTo({ top: 0 });
+    this.setState({ view: 'loading', token, scanning: false });
+    clearTimeout(this.lt);
+    this.lt = setTimeout(() => this.setState({ view: 'result', checkedAt: new Date().toLocaleString(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }), this.reduced ? 200 : 1100);
+  }
+  async startCamera() {
+    this.setState({ scanning: true, camErr: null });
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nocam');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      this.stream = stream;
+      const v = this.videoRef.current;
+      if (v) { v.srcObject = stream; await v.play().catch(() => {}); }
+      if (this.scanLineRef.current && !this.reduced) this.lineAnim = this.scanLineRef.current.animate([{ top: '15%' }, { top: '85%' }, { top: '15%' }], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
+      if ('BarcodeDetector' in window) {
+        const det = new window.BarcodeDetector({ formats: ['qr_code'] });
+        const loop = async () => {
+          if (!this.stream || !this.videoRef.current) return;
+          try { const codes = await det.detect(this.videoRef.current); const t = codes.map((c) => extractToken(c.rawValue)).find(Boolean); if (t) return this.verify(t); } catch (e) {}
+          this.scanT = setTimeout(loop, 300);
+        };
+        loop();
+      } else {
+        this.setState({ camErr: "This browser can't read QR codes from the camera. Enter the code printed under the QR instead." });
+      }
+    } catch (e) {
+      this.setState({ camErr: "We couldn't access the camera. Allow camera access in your browser, or enter the code manually." });
+    }
+  }
+  stopCamera() {
+    clearTimeout(this.scanT);
+    this.lineAnim && this.lineAnim.cancel();
+    if (this.stream) { this.stream.getTracks().forEach((t) => t.stop()); this.stream = null; }
+  }
+
+  renderVals() {
+    const S = this.state;
+    const r = S.view === 'result' ? result(SAMPLES[S.token] || 'UNKNOWN') : result('AUTHENTIC');
+    return {
+      isHome: S.view === 'home', isLoading: S.view === 'loading', isResult: S.view === 'result',
+      goHome: () => this.setState({ view: 'home', code: '', error: null }),
+      reverify: () => this.verify(S.token),
+      scanning: S.scanning, notScanning: !S.scanning,
+      startScan: () => this.startCamera(), stopScan: () => { this.stopCamera(); this.setState({ scanning: false }); },
+      videoRef: this.videoRef, scanLineRef: this.scanLineRef,
+      camError: !!S.camErr, camOk: !S.camErr, camErrorText: S.camErr || '',
+      code: S.code, onCode: (e) => this.setState({ code: e.target.value, error: null }),
+      inputBorder: S.error ? '#F04438' : '#E4E7EC',
+      hasError: !!S.error, error: S.error || '',
+      submitDisabled: !S.code.trim(), submitOpacity: S.code.trim() ? 1 : 0.45,
+      submit: (e) => {
+        e.preventDefault();
+        const t = extractToken(S.code);
+        if (!t) return this.setState({ error: "That doesn't look like an ORIGINX code. Check the characters under the QR code and try again." });
+        this.verify(t);
+      },
+      samples: [['Authentic', 'ox_sample_authentic_7F3K2041'], ['Proof pending', 'ox_sample_pending_proof_05'], ['Recalled', 'ox_sample_recalled_B2041xx'], ['Counterfeit', 'ox_sample_counterfeit_7F3K'], ['Not found', 'ox_sample_unknown_000000']].map(([label, code]) => ({ label, use: () => this.setState({ code, error: null }) })),
+      assurances: ['No account or app needed', 'We never store your IP address — only an anonymous hash', 'Results are checked against a public blockchain'],
+      r, checkedAt: S.checkedAt,
+    };
+  }
+}
+</script>
+</body>
+</html>

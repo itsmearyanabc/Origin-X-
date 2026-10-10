@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#FFFFFF"><svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="800" fill="#FFFFFF"/><circle cx="600" cy="400" r="220" fill="#F07824"/><circle cx="760" cy="250" r="80" fill="#2864DC"/></svg></template>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/styles.css">
+<script src="_ds/organic-b810a370-2a84-43ca-a7fa-7b016196498b/_ds_bundle.js"></script>
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:#FFFFFF;color:#172033;font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+a{color:#2864DC;text-decoration:none}a:hover{color:#F07824}
+*:focus-visible{outline:2px solid #F07824;outline-offset:2px}
+::selection{background:#FDE3CF}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+</style>
+</helmet>
+
+<header style="position:sticky;top:0;z-index:50;" onMouseLeave="{{ headerLeave }}">
+  <div style="background:{{ headerBg }};border-bottom:1px solid {{ headerBorder }};box-shadow:{{ headerShadow }};transition:background .3s ease,box-shadow .3s ease,border-color .3s ease;backdrop-filter:saturate(1.4) blur(14px);">
+    <nav aria-label="Main" style="max-width:1240px;margin:0 auto;padding:0 clamp(20px,4vw,40px);height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px;">
+      <a href="#top" aria-label="ORIGINX home" style="display:flex;align-items:center;flex-shrink:0;">
+        <img src="assets/originx-logo.png" alt="ORIGINX" style="height:38px;width:auto;display:block;"></img>
+      </a>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:2px;">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+            <button type="button" aria-expanded="{{ n.expanded }}" aria-haspopup="true" onMouseEnter="{{ n.enter }}" onClick="{{ n.click }}" style="display:flex;align-items:center;gap:6px;padding:10px 14px;border:0;border-radius:999px;background:{{ n.bg }};color:#172033;font:600 15px var(--font-body);cursor:pointer;transition:background .2s ease;" style-hover="background:#F7F8FA;">
+              <span>{{ n.label }}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate({{ n.rot }}deg);transition:transform .25s ease;"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <a href="Verify.dc.html" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;color:#172033;font-weight:600;font-size:15px;" style-hover="background:#F7F8FA;color:#172033;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F07824" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"></path></svg>
+            <span>Verify a product</span>
+          </a>
+          <a href="#" data-route="/sign-in" style="padding:10px 18px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;color:#172033;font-weight:600;font-size:15px;" style-hover="border-color:#172033;color:#172033;">Sign in</a>
+          <a href="#" data-route="/sign-up" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;font-size:15px;transition:background .2s ease;" style-hover="background:#F48F45;color:#172033;" style-active="background:#D9661A;">
+            <span>Get started</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ toggleMobile }}" aria-label="{{ mobileLabel }}" aria-expanded="{{ mOpen }}" style="width:44px;height:44px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;display:grid;place-items:center;color:#172033;cursor:pointer;">
+          <sc-if value="{{ mOpen }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></sc-if>
+          <sc-if value="{{ mClosed }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></sc-if>
+        </button>
+      </sc-if>
+    </nav>
+  </div>
+
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div role="region" aria-label="Menu" onMouseEnter="{{ panelEnter }}" style="position:absolute;left:0;right:0;top:100%;opacity:{{ menuOpacity }};transform:translateY({{ menuY }}px);pointer-events:{{ menuPE }};visibility:{{ menuVis }};transition:opacity .22s ease,transform .32s cubic-bezier(.16,1,.3,1),visibility .22s;">
+      <div style="background:#fff;border-bottom:1px solid #E4E7EC;box-shadow:0 30px 60px -30px rgba(23,32,51,.28);">
+        <div style="max-width:1240px;margin:0 auto;padding:32px clamp(20px,4vw,40px) 36px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:40px;">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px;">
+            <sc-for list="{{ menuGroups }}" as="g" hint-placeholder-count="2">
+              <div data-menucol="1" style="display:flex;flex-direction:column;gap:6px;">
+                <div style="font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;padding:0 12px 6px;">{{ g.title }}</div>
+                <sc-for list="{{ g.links }}" as="l" hint-placeholder-count="4">
+                  <a href="{{ l.href }}" data-route="{{ l.route }}" onClick="{{ closeMenu }}" style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:16px;color:#172033;transition:background .18s ease;" style-hover="background:#FFF4EC;color:#172033;">
+                    <span style="font-weight:700;font-size:15px;">{{ l.label }}</span>
+                    <span style="font-size:13px;color:#475467;">{{ l.desc }}</span>
+                  </a>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <a data-menucol="1" href="{{ menuFeat.href }}" data-route="{{ menuFeat.route }}" onClick="{{ closeMenu }}" style="display:flex;flex-direction:column;gap:10px;justify-content:flex-end;min-height:220px;padding:24px;border-radius:28px;background:#172033;color:#fff;" style-hover="background:#1E2A44;color:#fff;">
+            <span style="font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#F7A66A;">{{ menuFeat.kicker }}</span>
+            <span style="font-family:var(--font-heading);font-size:24px;line-height:1.15;text-wrap:balance;">{{ menuFeat.title }}</span>
+            <span style="font-size:14px;line-height:1.5;color:#D0D5DD;">{{ menuFeat.text }}</span>
+            <span style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:#F7A66A;">{{ menuFeat.cta }} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:100%;height:calc(100vh - 72px);overflow:auto;background:#fff;border-top:1px solid #E4E7EC;">
+      <div style="padding:12px 20px 32px;display:flex;flex-direction:column;gap:4px;">
+        <sc-for list="{{ mobileItems }}" as="m" hint-placeholder-count="5">
+          <div data-mitem="1" style="border-bottom:1px solid #E4E7EC;">
+            <button type="button" onClick="{{ m.toggle }}" aria-expanded="{{ m.open }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 4px;border:0;background:none;font:600 18px var(--font-body);color:#172033;cursor:pointer;">
+              <span>{{ m.label }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate({{ m.rot }}deg);transition:transform .25s ease;"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <div style="display:grid;grid-template-rows:{{ m.rows }};transition:grid-template-rows .32s cubic-bezier(.16,1,.3,1);">
+              <div style="overflow:hidden;">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:0 0 14px;">
+                  <sc-for list="{{ m.links }}" as="l" hint-placeholder-count="4">
+                    <a href="{{ l.href }}" data-route="{{ l.route }}" onClick="{{ closeMobile }}" style="display:block;padding:12px 12px;border-radius:16px;color:#172033;font-size:16px;" style-hover="background:#FFF4EC;color:#172033;">{{ l.label }}</a>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div data-mitem="1" style="display:grid;gap:10px;margin-top:20px;">
+          <a href="Verify.dc.html" style="display:flex;justify-content:center;padding:14px;border-radius:999px;border:1px solid #E4E7EC;color:#172033;font-weight:700;">Verify a product</a>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <a href="#" data-route="/sign-in" style="display:flex;justify-content:center;padding:14px;border-radius:999px;border:1px solid #E4E7EC;color:#172033;font-weight:700;">Sign in</a>
+            <a href="#" data-route="/sign-up" style="display:flex;justify-content:center;padding:14px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;">Get started</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</header>
+
+<main id="top">
+
+<!-- HERO A: split with passport -->
+<sc-if value="{{ heroSplit }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="Hero" data-mascot-scope="1" style="position:relative;overflow:hidden;">
+    <div style="max-width:1240px;margin:0 auto;padding:clamp(40px,6vw,80px) clamp(20px,4vw,40px) clamp(56px,7vw,96px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:clamp(40px,6vw,80px);align-items:center;">
+      <div style="display:flex;flex-direction:column;gap:28px;align-items:flex-start;">
+        <span data-hero="0" style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#475467;">THE VERIFIABLE IDENTITY LAYER</span>
+        <h1 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(52px,7.6vw,104px);line-height:.96;letter-spacing:-.01em;color:#172033;">
+          <span data-hero="1" style="display:block;">Every product.</span>
+          <span data-hero="2" style="display:block;color:#2864DC;">One identity.</span>
+        </h1>
+        <p data-hero="3" style="margin:0;max-width:520px;font-size:clamp(17px,1.5vw,19px);line-height:1.6;color:#475467;text-wrap:pretty;">Give every physical product a verifiable digital identity. Verify authenticity, inspect lifecycle evidence, detect suspicious identity activity, and manage inventory through one connected platform.</p>
+        <div data-hero="4" style="display:flex;flex-wrap:wrap;gap:12px;">
+          <a href="#" data-route="/sign-up" onMouseEnter="{{ reactFox }}" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;font-size:17px;transition:background .2s ease,transform .2s ease;" style-hover="background:#F48F45;color:#172033;transform:translateY(-1px);" style-active="background:#D9661A;transform:none;">
+            <span>Get started</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+          <a href="Verify.dc.html" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;border:1.5px solid #172033;color:#172033;font-weight:700;font-size:17px;transition:background .2s ease;" style-hover="background:#172033;color:#fff;">Verify a product</a>
+        </div>
+      </div>
+      <div data-hero="2" style="position:relative;min-height:520px;display:grid;place-items:center;">
+        <div data-parallax="0.06" style="position:absolute;width:min(520px,100%);aspect-ratio:1;border-radius:50%;background:#EAF0FC;"></div>
+        <div data-parallax="-0.14" style="position:absolute;width:min(220px,40%);aspect-ratio:1;border-radius:50%;background:#FDE3CF;right:2%;top:4%;"></div>
+        <div style="position:relative;width:min(400px,100%);display:flex;flex-direction:column;gap:18px;background:#fff;border:1px solid #E4E7EC;border-radius:28px;padding:26px;box-shadow:0 30px 70px -30px rgba(23,32,51,.38);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <span style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#475467;">Product passport</span>
+            <span style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#E7F6EE;color:#14663F;font-size:12px;font-weight:700;"><span style="width:7px;height:7px;border-radius:50%;background:#1F8A5B;"></span>History verified</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-family:var(--font-heading);font-size:26px;line-height:1.1;">Amoxicillin 250 mg</span>
+            <span style="font-size:14px;color:#475467;">Example Pharma · Verified brand</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <sc-for list="{{ passportFields }}" as="f" hint-placeholder-count="4">
+              <div style="padding:10px 12px;border-radius:16px;background:#F7F8FA;display:flex;flex-direction:column;gap:2px;min-width:0;">
+                <span style="font-size:12px;color:#475467;">{{ f.k }}</span>
+                <span style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:64px;height:64px;border-radius:50%;background:conic-gradient(#F07824 0 92%,#F2F4F7 0);display:grid;place-items:center;flex-shrink:0;">
+              <div style="width:50px;height:50px;border-radius:50%;background:#fff;display:grid;place-items:center;font-family:var(--font-heading);font-size:19px;">92</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-weight:700;font-size:15px;">Trust score</span>
+              <span style="font-size:13px;color:#475467;line-height:1.4;">Organization, origin, custody, cryptography, proofs, incidents.</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:8px;padding-top:14px;border-top:1px dashed #E4E7EC;font:500 12px ui-monospace,Menlo,monospace;color:#475467;">
+            <span>event #05 · 9c41e2…a07b</span>
+            <span style="color:#2864DC;">anchored</span>
+          </div>
+        </div>
+        <span style="position:absolute;left:0;bottom:6%;font:500 11px ui-monospace,Menlo,monospace;color:#475467;">Sample passport</span>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<!-- HERO B: orange panel with phone -->
+<sc-if value="{{ heroPanel }}" hint-placeholder-val="{{ false }}">
+  <section data-screen-label="Hero" style="padding:16px clamp(12px,2vw,24px) 0;">
+    <div style="max-width:1400px;margin:0 auto;border-radius:clamp(28px,4vw,48px);background:#F07824;overflow:hidden;">
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(48px,7vw,96px) clamp(24px,4vw,56px) 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:clamp(32px,5vw,64px);align-items:end;">
+        <div style="display:flex;flex-direction:column;gap:26px;align-items:flex-start;padding-bottom:clamp(48px,7vw,96px);">
+          <span data-hero="0" style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#172033;">THE VERIFIABLE IDENTITY LAYER</span>
+          <h1 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(52px,7.6vw,108px);line-height:.95;color:#172033;">
+            <span data-hero="1" style="display:block;">Every product.</span>
+            <span data-hero="2" style="display:block;color:#fff;">One identity.</span>
+          </h1>
+          <p data-hero="3" style="margin:0;max-width:500px;font-size:clamp(17px,1.5vw,19px);line-height:1.6;color:#172033;text-wrap:pretty;">Give every physical product a verifiable digital identity. Verify authenticity, inspect lifecycle evidence, detect suspicious identity activity, and manage inventory through one connected platform.</p>
+          <div data-hero="4" style="display:flex;flex-wrap:wrap;gap:12px;">
+            <a href="#" data-route="/sign-up" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#172033;color:#fff;font-weight:700;font-size:17px;" style-hover="background:#24304A;color:#fff;">
+              <span>Get started</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </a>
+            <a href="Verify.dc.html" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#fff;color:#172033;font-weight:700;font-size:17px;" style-hover="background:#FFF4EC;color:#172033;">Verify a product</a>
+          </div>
+        </div>
+        <div data-hero="3" style="display:flex;justify-content:center;">
+          <div style="width:min(340px,100%);background:#172033;border-radius:44px 44px 0 0;padding:12px 12px 0;">
+            <div style="background:#F7F8FA;border-radius:34px 34px 0 0;padding:22px 16px 28px;display:flex;flex-direction:column;gap:12px;min-height:440px;">
+              <div style="width:90px;height:6px;border-radius:999px;background:#E4E7EC;margin:0 auto 6px;"></div>
+              <div style="padding:18px;border-radius:24px;background:#1F8A5B;color:#fff;display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">Authentic product</span>
+                <span style="font-family:var(--font-heading);font-size:20px;line-height:1.2;">Amoxicillin 250 mg is genuine.</span>
+              </div>
+              <sc-for list="{{ checks }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#fff;border:1px solid #E4E7EC;">
+                  <span style="width:28px;height:28px;border-radius:50%;background:#E7F6EE;display:grid;place-items:center;color:#1F8A5B;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+                  <span style="display:flex;flex-direction:column;min-width:0;"><span style="font-weight:700;font-size:14px;">{{ c.label }}</span><span style="font-size:12px;color:#475467;">{{ c.detail }}</span></span>
+                </div>
+              </sc-for>
+              <span style="margin-top:auto;text-align:center;font:500 11px ui-monospace,Menlo,monospace;color:#475467;">Sample verification</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<!-- HERO C: big type + chain ribbon -->
+<sc-if value="{{ heroChain }}" hint-placeholder-val="{{ false }}">
+  <section data-screen-label="Hero" style="overflow:hidden;">
+    <div style="max-width:1240px;margin:0 auto;padding:clamp(48px,8vw,104px) clamp(20px,4vw,40px) 0;display:flex;flex-direction:column;gap:clamp(28px,4vw,44px);">
+      <span data-hero="0" style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#475467;">THE VERIFIABLE IDENTITY LAYER</span>
+      <h1 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(56px,10.5vw,148px);line-height:.92;color:#172033;">
+        <span data-hero="1" style="display:block;">Every product.</span>
+        <span data-hero="2" style="display:block;padding-left:clamp(0px,8vw,140px);"><span style="color:#F07824;">One</span> identity.</span>
+      </h1>
+      <div data-hero="3" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:28px;">
+        <p style="margin:0;max-width:560px;font-size:clamp(17px,1.5vw,19px);line-height:1.6;color:#475467;text-wrap:pretty;">Give every physical product a verifiable digital identity. Verify authenticity, inspect lifecycle evidence, detect suspicious identity activity, and manage inventory through one connected platform.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <a href="#" data-route="/sign-up" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;font-size:17px;" style-hover="background:#F48F45;color:#172033;">
+            <span>Get started</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+          <a href="Verify.dc.html" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;border:1.5px solid #172033;color:#172033;font-weight:700;font-size:17px;" style-hover="background:#172033;color:#fff;">Verify a product</a>
+        </div>
+      </div>
+    </div>
+    <div data-hero="5" style="margin-top:clamp(48px,6vw,80px);padding:0 0 clamp(64px,8vw,104px);overflow-x:auto;">
+      <div style="display:flex;gap:0;align-items:center;padding:0 clamp(20px,4vw,40px);width:max-content;margin:0 auto;">
+        <sc-for list="{{ ribbon }}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;">
+            <div style="width:220px;padding:18px;border-radius:24px;background:{{ r.bg }};color:{{ r.fg }};display:flex;flex-direction:column;gap:8px;">
+              <span style="font:600 11px ui-monospace,Menlo,monospace;opacity:.8;">#{{ r.n }}</span>
+              <span style="font-weight:700;font-size:15px;">{{ r.type }}</span>
+              <span style="font-size:13px;opacity:.85;">{{ r.loc }}</span>
+              <span style="font:500 11px ui-monospace,Menlo,monospace;opacity:.75;">{{ r.hash }}</span>
+            </div>
+            <sc-if value="{{ r.link }}" hint-placeholder-val="{{ true }}"><span style="width:28px;height:3px;background:#F07824;border-radius:999px;"></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="text-align:center;margin-top:14px;font:500 11px ui-monospace,Menlo,monospace;color:#475467;">Sample lifecycle · each hash covers its event and the one before it</div>
+    </div>
+  </section>
+</sc-if>
+
+<!-- INDUSTRIES -->
+<sc-if value="{{ showMarquee }}" hint-placeholder-val="{{ true }}">
+  <section aria-label="Industries" style="border-top:1px solid #E4E7EC;border-bottom:1px solid #E4E7EC;background:#F7F8FA;">
+    <div style="max-width:1240px;margin:0 auto;padding:22px clamp(20px,4vw,40px);display:flex;align-items:center;gap:28px;">
+      <span style="flex-shrink:0;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;">Built for</span>
+      <div style="overflow:hidden;flex:1;min-width:0;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);">
+        <div ref="{{ marqueeRef }}" style="display:flex;gap:12px;width:max-content;">
+          <sc-for list="{{ industriesLoop }}" as="ind" hint-placeholder-count="10">
+            <span style="flex-shrink:0;padding:8px 16px;border-radius:999px;background:#fff;border:1px solid #E4E7EC;font-weight:600;font-size:14px;white-space:nowrap;">{{ ind }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<!-- PLATFORM: identity + inventory -->
+<section id="platform" data-screen-label="Platform" style="scroll-margin-top:80px;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:48px;">
+    <div data-reveal="1" style="display:flex;flex-direction:column;gap:18px;max-width:760px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#D9661A;">ONE PLATFORM</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Identity and inventory on the same record.</h2>
+      <p style="margin:0;font-size:18px;line-height:1.6;color:#475467;text-wrap:pretty;">The passport proves what a product is and where it has been. The inventory side tracks where it is now. Because both read from one record, a recall or a custody change shows up in both places at once.</p>
+    </div>
+    <div data-reveal="1" role="tablist" aria-label="Capabilities" data-tabs="1" style="position:relative;display:flex;gap:6px;padding:6px;border-radius:999px;background:#F7F8FA;border:1px solid #E4E7EC;width:max-content;max-width:100%;">
+      <span data-pill="1" aria-hidden="true" style="position:absolute;left:0;top:0;border-radius:999px;background:#fff;box-shadow:0 4px 14px -6px rgba(23,32,51,.25);transition:transform .45s cubic-bezier(.16,1,.3,1),width .45s cubic-bezier(.16,1,.3,1);"></span>
+      <sc-for list="{{ capTabs }}" as="tb" hint-placeholder-count="2">
+        <button type="button" role="tab" aria-selected="{{ tb.on }}" onClick="{{ tb.select }}" style="position:relative;z-index:1;padding:12px 22px;border:0;border-radius:999px;background:{{ tb.bg }};color:{{ tb.fg }};font:700 15px var(--font-body);cursor:pointer;box-shadow:{{ tb.shadow }};transition:color .3s ease;">{{ tb.label }}</button>
+      </sc-for>
+    </div>
+    <div data-reveal="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(32px,5vw,64px);align-items:center;">
+      <div style="display:flex;flex-direction:column;gap:22px;">
+        <h3 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(28px,3vw,38px);line-height:1.1;">{{ cap.title }}</h3>
+        <p style="margin:0;font-size:17px;line-height:1.6;color:#475467;">{{ cap.text }}</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ cap.points }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600;">
+              <span style="width:26px;height:26px;border-radius:50%;background:{{ cap.dot }};display:grid;place-items:center;color:#fff;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span>{{ p }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-radius:32px;background:{{ cap.panel }};padding:clamp(20px,3vw,36px);min-height:380px;display:flex;flex-direction:column;justify-content:center;transition:background .35s ease;">
+        <sc-if value="{{ capIdentity }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px -30px rgba(23,32,51,.4);">
+            <div style="display:flex;justify-content:space-between;gap:10px;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;"><span>Journey</span><span>Sample</span></div>
+            <sc-for list="{{ journey }}" as="j" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:center;">
+                <span style="width:28px;height:28px;border-radius:50%;background:#FDE3CF;color:#B4500F;display:grid;place-items:center;font:700 12px var(--font-body);">{{ j.n }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0;"><span style="font-weight:700;font-size:14px;">{{ j.type }}</span><span style="font-size:12px;color:#475467;">{{ j.loc }}</span></span>
+                <span style="font:500 11px ui-monospace,Menlo,monospace;color:{{ j.proofColor }};">{{ j.proof }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ capInventory }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 50px -30px rgba(23,32,51,.4);overflow-x:auto;">
+            <div style="display:flex;justify-content:space-between;gap:10px;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;padding-bottom:8px;"><span>Stock by warehouse</span><span>Sample</span></div>
+            <sc-for list="{{ stock }}" as="s" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:minmax(120px,1.4fr) minmax(90px,1fr) 60px 100px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #F2F4F7;font-size:14px;min-width:400px;">
+                <span style="font-weight:700;">{{ s.sku }}</span>
+                <span style="color:#475467;">{{ s.site }}</span>
+                <span style="font-weight:700;text-align:right;">{{ s.qty }}</span>
+                <span style="justify-self:end;padding:4px 10px;border-radius:999px;background:{{ s.bg }};color:{{ s.fg }};font-size:12px;font-weight:700;">{{ s.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE EXPLORER -->
+<section id="features" data-screen-label="Features" style="scroll-margin-top:80px;background:#F7F8FA;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:48px;">
+    <div data-reveal="1" style="display:flex;flex-direction:column;gap:18px;max-width:760px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#D9661A;">WHAT EACH PASSPORT CARRIES</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Evidence you can check, not claims you have to trust.</h2>
+    </div>
+    <div onMouseEnter="{{ featHoldOn }}" onMouseLeave="{{ featHoldOff }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:clamp(24px,4vw,56px);align-items:start;">
+      <div data-stagger="1" role="tablist" aria-label="Features" style="display:flex;flex-direction:column;gap:4px;">
+        <sc-for list="{{ feats }}" as="f" hint-placeholder-count="6">
+          <button type="button" role="tab" aria-selected="{{ f.on }}" onClick="{{ f.select }}" style="text-align:left;display:flex;flex-direction:column;gap:8px;padding:18px 22px;border:0;border-radius:24px;background:{{ f.bg }};cursor:pointer;color:#172033;font-family:var(--font-body);box-shadow:{{ f.shadow }};transition:background .25s ease;" style-hover="background:#fff;">
+            <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;">
+              <span style="font-weight:700;font-size:18px;">{{ f.title }}</span>
+              <span style="font:600 12px ui-monospace,Menlo,monospace;color:#475467;">0{{ f.n }}</span>
+            </span>
+            <sc-if value="{{ f.on }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:15px;line-height:1.55;color:#475467;">{{ f.text }}</span>
+              <span style="display:block;height:3px;border-radius:999px;background:#F2F4F7;overflow:hidden;width:100%;"><span data-feat-bar="{{ f.i }}" style="display:block;height:100%;background:#F07824;transform-origin:left;transform:scaleX({{ f.barStatic }});"></span></span>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <div data-reveal="1" style="position:sticky;top:100px;border-radius:32px;background:#fff;border:1px solid #E4E7EC;min-height:460px;padding:clamp(20px,3vw,36px);display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <span style="font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#475467;">{{ featCur.title }}</span>
+          <span style="font:500 11px ui-monospace,Menlo,monospace;color:#475467;">Sample data</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <sc-for list="{{ featCur.points }}" as="p" hint-placeholder-count="3">
+            <span style="padding:6px 12px;border-radius:999px;background:#FFF4EC;color:#9A440D;font-size:13px;font-weight:700;">{{ p }}</span>
+          </sc-for>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+
+          <sc-if value="{{ f0 }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+              <sc-for list="{{ passportAll }}" as="pf" hint-placeholder-count="6">
+                <div style="padding:14px;border-radius:18px;background:#F7F8FA;display:flex;flex-direction:column;gap:4px;"><span style="font-size:12px;color:#475467;">{{ pf.k }}</span><span style="font-weight:700;font-size:15px;">{{ pf.v }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f1 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:0;">
+              <sc-for list="{{ hashRows }}" as="h" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                  <div style="width:100%;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:14px 16px;border-radius:18px;background:#F7F8FA;">
+                    <span style="font:700 12px ui-monospace,Menlo,monospace;color:#D9661A;">#{{ h.n }}</span>
+                    <span style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-weight:700;font-size:14px;">{{ h.type }}</span><span style="font:500 11px ui-monospace,Menlo,monospace;color:#475467;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">prev {{ h.prev }} → hash {{ h.hash }}</span></span>
+                  </div>
+                  <sc-if value="{{ h.link }}" hint-placeholder-val="{{ true }}"><span style="width:3px;height:14px;background:#F07824;margin-left:30px;border-radius:999px;"></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ anchorRows }}" as="a" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px;border-radius:18px;border:1px solid #E4E7EC;">
+                  <span style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-weight:700;font-size:14px;">{{ a.what }}</span><span style="font:500 11px ui-monospace,Menlo,monospace;color:#475467;">{{ a.hash }}</span></span>
+                  <span style="padding:5px 11px;border-radius:999px;background:{{ a.bg }};color:{{ a.fg }};font-size:12px;font-weight:700;">{{ a.status }}</span>
+                </div>
+              </sc-for>
+              <span style="font-size:13px;color:#475467;line-height:1.5;">If the chain can't be reached, a proof shows Pending. It is never shown as anchored until it is.</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f3 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+              <sc-for list="{{ custodySteps }}" as="c" hint-placeholder-count="3">
+                <div style="padding:18px;border-radius:22px;background:{{ c.bg }};color:{{ c.fg }};display:flex;flex-direction:column;gap:8px;min-height:150px;">
+                  <span style="font:700 12px ui-monospace,Menlo,monospace;opacity:.8;">STEP {{ c.n }}</span>
+                  <span style="font-family:var(--font-heading);font-size:24px;">{{ c.title }}</span>
+                  <span style="font-size:14px;line-height:1.45;opacity:.9;">{{ c.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f4 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;align-items:center;">
+              <div style="width:180px;height:180px;border-radius:50%;background:conic-gradient(#F07824 0 92%,#F2F4F7 0);display:grid;place-items:center;justify-self:center;">
+                <div style="width:146px;height:146px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:var(--font-heading);font-size:52px;line-height:1;">92</span><span style="font-size:13px;color:#475467;">of 100</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ trustFactors }}" as="t" hint-placeholder-count="6">
+                  <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:8px 0;border-bottom:1px solid #F2F4F7;"><span style="font-weight:600;">{{ t.k }}</span><span style="font-weight:700;color:{{ t.c }};">{{ t.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f5 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+              <div style="padding:20px;border-radius:22px;background:#E7F6EE;display:flex;flex-direction:column;gap:8px;">
+                <span style="font:700 11px ui-monospace,Menlo,monospace;color:#14663F;">ORIGINAL · REGISTERED FIRST</span>
+                <span style="font-weight:700;font-size:16px;">OX-7F3K-2041</span>
+                <span style="font-size:14px;color:#14663F;">Owner alerted to a collision.</span>
+              </div>
+              <div style="padding:20px;border-radius:22px;background:#FDECEC;display:flex;flex-direction:column;gap:8px;">
+                <span style="font:700 11px ui-monospace,Menlo,monospace;color:#A12A2A;">SECOND REGISTRATION</span>
+                <span style="font-weight:700;font-size:16px;">OX-7F3K-2041</span>
+                <span style="font-size:14px;color:#A12A2A;">Quarantined. Scans show COUNTERFEIT.</span>
+              </div>
+              <div style="grid-column:1/-1;padding:16px 20px;border-radius:22px;background:#172033;color:#fff;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+                <span style="font-weight:700;">Batch B-2041 recalled</span>
+                <span style="font-size:13px;color:#D0D5DD;">Every unit scans as RECALLED</span>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAMPER DEMO -->
+<section id="tamper" data-screen-label="Tamper demo" style="scroll-margin-top:80px;background:#172033;color:#fff;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:36px;">
+    <div data-reveal="1" style="display:flex;flex-direction:column;gap:18px;max-width:780px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#F7A66A;">TRY TO TAMPER WITH IT</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Edit one record. Watch the chain refuse it.</h2>
+      <p style="margin:0;font-size:18px;line-height:1.6;color:#D0D5DD;text-wrap:pretty;">These are real SHA-256 hashes, computed in your browser right now. Each record's hash covers its content and the hash before it — and the originals are anchored on a blockchain.</p>
+    </div>
+    <div data-reveal="1" style="display:flex;flex-wrap:wrap;gap:10px;">
+      <button type="button" onClick="{{ tamperNaive }}" disabled="{{ naiveDisabled }}" style="padding:14px 22px;border:0;border-radius:999px;background:#F07824;color:#172033;font:700 15px var(--font-body);cursor:pointer;opacity:{{ naiveOpacity }};" style-hover="background:#F48F45;">Edit event #3 in the database</button>
+      <button type="button" onClick="{{ tamperRewrite }}" disabled="{{ rewriteDisabled }}" style="padding:14px 22px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font:700 15px var(--font-body);cursor:pointer;opacity:{{ rewriteOpacity }};" style-hover="background:rgba(255,255,255,.12);">Edit it and re-hash everything</button>
+      <button type="button" onClick="{{ tamperReset }}" disabled="{{ resetDisabled }}" style="padding:14px 22px;border:0;border-radius:999px;background:transparent;color:#D0D5DD;font:700 15px var(--font-body);cursor:pointer;opacity:{{ resetOpacity }};" style-hover="background:rgba(255,255,255,.08);color:#fff;">Reset</button>
+    </div>
+    <div aria-live="polite" style="padding:18px 22px;border-radius:22px;background:{{ verdict.bg }};border:1px solid {{ verdict.border }};display:flex;flex-direction:column;gap:4px;max-width:820px;transition:background .4s ease,border-color .4s ease;">
+      <span style="font-weight:700;font-size:16px;">{{ verdict.title }}</span>
+      <span style="font-size:15px;line-height:1.5;color:#D0D5DD;">{{ verdict.text }}</span>
+    </div>
+    <div style="overflow-x:auto;padding-bottom:6px;">
+      <div style="min-width:900px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:10px;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;">
+          <span>Database records</span>
+          <span style="padding:3px 10px;border-radius:999px;background:{{ dbBadge.bg }};color:{{ dbBadge.fg }};letter-spacing:0;text-transform:none;">{{ dbBadge.text }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;">
+          <sc-for list="{{ blockView }}" as="b" hint-placeholder-count="5">
+            <div data-bad="{{ b.bad }}" style="position:relative;padding:16px;border-radius:22px;border:1px solid {{ b.border }};background:{{ b.bg }};display:flex;flex-direction:column;gap:10px;transition:background .5s ease,border-color .5s ease;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <span style="font:600 12px ui-monospace,Menlo,monospace;color:#98A2B3;">#0{{ b.n }}</span>
+                <span style="padding:3px 9px;border-radius:999px;background:{{ b.badgeBg }};color:{{ b.badgeFg }};font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">{{ b.badge }}</span>
+              </div>
+              <span style="font-weight:700;font-size:14px;">{{ b.type }}</span>
+              <span style="font-size:12px;color:{{ b.locColor }};font-weight:{{ b.locWeight }};">{{ b.location }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;font:500 11px ui-monospace,Menlo,monospace;color:#98A2B3;">
+                <span>prev <span style="color:#D0D5DD;">{{ b.prev }}</span></span>
+                <span>hash <span style="color:{{ b.hashColor }};">{{ b.hash }}</span></span>
+                <sc-if value="{{ b.showRe }}" hint-placeholder-val="{{ false }}"><span style="color:#F97066;">recomputed {{ b.re }}</span></sc-if>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:14px;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;">Blockchain anchors (write-once)</div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;">
+          <sc-for list="{{ anchorView }}" as="a" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:16px;border:1px solid {{ a.border }};background:{{ a.bg }};font:500 11px ui-monospace,Menlo,monospace;color:#D0D5DD;transition:background .5s ease,border-color .5s ease;">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ a.dot }};flex-shrink:0;"></span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.hash }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INVENTORY FLOW -->
+<section id="inventory" data-screen-label="Inventory" ref="{{ invRef }}" style="scroll-margin-top:80px;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:56px;">
+    <div data-reveal="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px 64px;align-items:end;">
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#2864DC;">INVENTORY OPERATIONS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">From SKU to shelf, on one ledger.</h2>
+      </div>
+      <p style="margin:0;font-size:18px;line-height:1.6;color:#475467;text-wrap:pretty;">Catalog, warehouses, movements and shipments run in the same organization panel as your passports, so stock and identity never drift apart.</p>
+    </div>
+    <div style="position:relative;">
+      <div style="position:absolute;left:0;right:0;top:27px;height:4px;border-radius:999px;background:#E4E7EC;"></div>
+      <div ref="{{ invLineRef }}" style="position:absolute;left:0;right:0;top:27px;height:4px;border-radius:999px;background:#2864DC;transform-origin:left;transform:scaleX(0);"></div>
+      <div data-stagger="1" style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:24px;">
+        <sc-for list="{{ invSteps }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <span style="width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:{{ s.bg }};color:{{ s.fg }};border:2px solid {{ s.ring }};font-family:var(--font-heading);font-size:22px;transition:background .3s ease,color .3s ease,border-color .3s ease;">{{ s.n }}</span>
+            <span style="font-weight:700;font-size:17px;">{{ s.title }}</span>
+            <span style="font-size:15px;line-height:1.5;color:#475467;">{{ s.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSUMER VERIFICATION -->
+<section id="verify" data-screen-label="Consumer verification" style="scroll-margin-top:80px;padding:0 clamp(12px,2vw,24px);">
+  <div data-reveal="clip" style="max-width:1400px;margin:0 auto;border-radius:clamp(28px,4vw,48px);background:#EAF0FC;">
+    <div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(24px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(40px,6vw,80px);align-items:center;">
+      <div data-reveal="1" style="display:flex;flex-direction:column;gap:22px;align-items:flex-start;">
+        <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#1C4BB4;">CONSUMER VERIFICATION</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">One scan. No app. An honest answer.</h2>
+        <p style="margin:0;font-size:18px;line-height:1.6;color:#344054;text-wrap:pretty;">Scanning the QR opens a public verification page in any browser. It only shows approved, non-sensitive information.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ consumerPoints }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600;">
+              <span style="width:24px;height:24px;border-radius:50%;background:#2864DC;color:#fff;display:grid;place-items:center;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span>{{ p }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <a href="Verify.dc.html" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#2864DC;color:#fff;font-weight:700;font-size:16px;margin-top:6px;" style-hover="background:#1C4BB4;color:#fff;">
+          <span>Verify a product</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+      <div data-reveal="1" style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <div role="tablist" aria-label="Scan outcomes" data-tabs="1" style="position:relative;display:flex;gap:4px;padding:5px;border-radius:999px;background:#fff;flex-wrap:wrap;justify-content:center;">
+          <span data-pill="1" aria-hidden="true" style="position:absolute;left:0;top:0;border-radius:999px;background:#172033;transition:transform .45s cubic-bezier(.16,1,.3,1),width .45s cubic-bezier(.16,1,.3,1);"></span>
+          <sc-for list="{{ phoneTabs }}" as="pt" hint-placeholder-count="3">
+            <button type="button" role="tab" aria-selected="{{ pt.on }}" onClick="{{ pt.select }}" style="position:relative;z-index:1;padding:10px 16px;border:0;border-radius:999px;background:{{ pt.bg }};color:{{ pt.fg }};font:700 14px var(--font-body);cursor:pointer;transition:color .3s ease;">{{ pt.label }}</button>
+          </sc-for>
+        </div>
+        <div style="width:min(330px,100%);background:#172033;border-radius:46px;padding:12px;box-shadow:0 40px 80px -40px rgba(23,32,51,.6);">
+          <div style="background:#F7F8FA;border-radius:36px;padding:22px 16px;display:flex;flex-direction:column;gap:12px;min-height:520px;">
+            <div style="width:90px;height:6px;border-radius:999px;background:#E4E7EC;margin:0 auto 6px;"></div>
+            <div style="padding:18px;border-radius:24px;background:{{ phone.bg }};color:#fff;display:flex;flex-direction:column;gap:6px;transition:background .35s ease;">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">{{ phone.kicker }}</span>
+              <span style="font-family:var(--font-heading);font-size:20px;line-height:1.2;">{{ phone.headline }}</span>
+              <span style="font-size:13px;line-height:1.45;opacity:.92;">{{ phone.detail }}</span>
+            </div>
+            <sc-for list="{{ phone.checks }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#fff;border:1px solid #E4E7EC;">
+                <span style="width:28px;height:28px;border-radius:50%;background:{{ c.bg }};color:{{ c.fg }};display:grid;place-items:center;flex-shrink:0;font-weight:800;font-size:13px;">{{ c.icon }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0;"><span style="font-weight:700;font-size:14px;">{{ c.label }}</span><span style="font-size:12px;color:#475467;">{{ c.detail }}</span></span>
+              </div>
+            </sc-for>
+            <span style="margin-top:auto;text-align:center;font:500 11px ui-monospace,Menlo,monospace;color:#475467;">Sample result</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" data-screen-label="How it works" style="scroll-margin-top:80px;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:48px clamp(40px,6vw,96px);align-items:start;">
+    <div data-reveal="1" style="position:sticky;top:110px;display:flex;flex-direction:column;gap:18px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#D9661A;">HOW IT WORKS</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Four steps, using the QR codes you already print.</h2>
+      <p style="margin:0;font-size:18px;line-height:1.6;color:#475467;">No IoT sensors, RFID or special hardware. Lifecycle events are recorded by the people and systems that handle the product.</p>
+      <a href="#" data-route="/how-it-works" style="display:flex;align-items:center;gap:8px;font-weight:700;color:#172033;" style-hover="color:#D9661A;">The full walkthrough <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+    </div>
+    <div data-stagger="1" style="display:flex;flex-direction:column;gap:16px;">
+      <sc-for list="{{ howSteps }}" as="h" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:72px minmax(0,1fr);gap:20px;padding:26px;border-radius:28px;background:#F7F8FA;transition:background .25s ease,transform .25s ease;" style-hover="background:#FFF4EC;transform:translateX(4px);">
+          <span style="width:72px;height:72px;border-radius:50%;background:{{ h.bg }};color:{{ h.fg }};display:grid;place-items:center;font-family:var(--font-heading);font-size:30px;">{{ h.n }}</span>
+          <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;">
+            <span style="font-family:var(--font-heading);font-size:28px;line-height:1.1;">{{ h.title }}</span>
+            <span style="font-size:16px;line-height:1.55;color:#475467;">{{ h.text }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section id="security" data-screen-label="Security and privacy" style="scroll-margin-top:80px;background:#F7F8FA;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:48px;">
+    <div data-reveal="1" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px;">
+      <div style="display:flex;flex-direction:column;gap:18px;max-width:700px;">
+        <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#2864DC;">SECURITY &amp; PRIVACY</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Only proofs go public. Your data stays yours.</h2>
+      </div>
+      <a href="#" data-route="/security" style="display:flex;align-items:center;gap:8px;padding:14px 22px;border-radius:999px;border:1.5px solid #172033;color:#172033;font-weight:700;" style-hover="background:#172033;color:#fff;">Security details</a>
+    </div>
+    <div data-stagger="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px;">
+      <sc-for list="{{ privacy }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:28px;border-radius:28px;background:#fff;min-height:200px;transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s ease;" style-hover="transform:translateY(-4px);box-shadow:0 24px 50px -30px rgba(23,32,51,.35);">
+          <span style="width:44px;height:44px;border-radius:50%;background:{{ p.bg }};"></span>
+          <span style="font-family:var(--font-heading);font-size:24px;line-height:1.15;">{{ p.title }}</span>
+          <span style="font-size:15px;line-height:1.55;color:#475467;">{{ p.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" data-screen-label="Pricing" style="scroll-margin-top:80px;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:48px;">
+    <div data-reveal="1" style="display:flex;flex-direction:column;gap:18px;max-width:700px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#D9661A;">PRICING</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Start free. Grow into it.</h2>
+    </div>
+    <div data-stagger="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px;align-items:stretch;">
+      <sc-for list="{{ plans }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:20px;padding:28px;border-radius:30px;background:{{ p.bg }};color:{{ p.fg }};border:1px solid {{ p.border }};transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s ease,border-color .3s ease;" style-hover="transform:translateY(-6px);box-shadow:0 30px 60px -34px rgba(23,32,51,.45);border-color:#F07824;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span style="font-weight:700;font-size:18px;">{{ p.name }}</span>
+            <sc-if value="{{ p.featured }}" hint-placeholder-val="{{ false }}"><span style="padding:4px 10px;border-radius:999px;background:#F07824;color:#172033;font-size:12px;font-weight:800;">Popular</span></sc-if>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:var(--font-heading);font-size:44px;line-height:1;">{{ p.price }}</span><span style="font-size:14px;opacity:.75;">{{ p.period }}</span></div>
+          <span style="font-size:15px;line-height:1.5;opacity:.85;">{{ p.tagline }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <sc-for list="{{ p.limits }}" as="l" hint-placeholder-count="2"><span style="padding:5px 11px;border-radius:999px;background:{{ p.chip }};font-size:13px;font-weight:700;">{{ l }}</span></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;flex:1;">
+            <sc-for list="{{ p.features }}" as="f" hint-placeholder-count="4"><span style="display:flex;gap:10px;font-size:14px;line-height:1.4;"><span style="color:{{ p.tick }};font-weight:800;">✓</span><span>{{ f }}</span></span></sc-for>
+          </div>
+          <a href="#" data-route="{{ p.route }}" style="display:flex;justify-content:center;padding:14px;border-radius:999px;background:{{ p.ctaBg }};color:{{ p.ctaFg }};font-weight:700;border:1.5px solid {{ p.ctaBorder }};" style-hover="opacity:.9;">{{ p.cta }}</a>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" data-screen-label="FAQ" style="scroll-margin-top:80px;background:#F7F8FA;">
+  <div style="max-width:1240px;margin:0 auto;padding:clamp(80px,10vw,136px) clamp(20px,4vw,40px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:40px clamp(40px,6vw,96px);align-items:start;">
+    <div data-reveal="1" style="display:flex;flex-direction:column;gap:18px;">
+      <span style="font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#D9661A;">FAQ</span>
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.02;">Questions we get asked.</h2>
+      <a href="#" data-route="/contact" style="display:flex;align-items:center;gap:8px;font-weight:700;color:#172033;" style-hover="color:#D9661A;">Ask us something else <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+    </div>
+    <div data-stagger="1" style="display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="7">
+        <div style="border-radius:24px;background:#fff;transition:box-shadow .3s ease;" style-hover="box-shadow:0 14px 30px -24px rgba(23,32,51,.35);">
+          <button type="button" onClick="{{ q.toggle }}" aria-expanded="{{ q.open }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 24px;border:0;background:none;text-align:left;font:700 17px var(--font-body);color:#172033;cursor:pointer;">
+            <span>{{ q.q }}</span>
+            <span style="width:32px;height:32px;border-radius:50%;background:{{ q.iconBg }};color:{{ q.iconFg }};display:grid;place-items:center;flex-shrink:0;transform:rotate({{ q.rot }}deg);transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s ease;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+          </button>
+          <div style="display:grid;grid-template-rows:{{ q.rows }};transition:grid-template-rows .4s cubic-bezier(.16,1,.3,1);">
+            <div style="overflow:hidden;"><p style="margin:0;padding:0 24px 22px;font-size:16px;line-height:1.6;color:#475467;opacity:{{ q.op }};transform:translateY({{ q.dy }}px);transition:opacity .35s ease .05s,transform .45s cubic-bezier(.16,1,.3,1);">{{ q.a }}</p></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING CTA -->
+<section data-screen-label="Closing CTA" style="padding:clamp(48px,6vw,80px) clamp(12px,2vw,24px);">
+  <div data-reveal="clip" style="max-width:1400px;margin:0 auto;border-radius:clamp(28px,4vw,48px);background:#F07824;position:relative;overflow:hidden;">
+    <div data-parallax="0.12" style="position:absolute;width:420px;height:420px;border-radius:50%;background:#F48F45;right:-120px;top:-160px;"></div>
+    <div data-parallax="-0.16" style="position:absolute;width:240px;height:240px;border-radius:50%;background:#2864DC;right:12%;bottom:-140px;"></div>
+    <div style="position:relative;max-width:1240px;margin:0 auto;padding:clamp(56px,8vw,112px) clamp(24px,4vw,56px);display:flex;flex-direction:column;gap:26px;align-items:flex-start;">
+      <h2 style="margin:0;font-family:var(--font-heading);font-weight:400;font-size:clamp(40px,6vw,84px);line-height:.98;color:#172033;max-width:900px;">Give your first product an identity it can prove.</h2>
+      <p style="margin:0;max-width:560px;font-size:18px;line-height:1.6;color:#172033;">Free for up to 100 products and 3 team members.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        <a href="#" data-route="/sign-up" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#172033;color:#fff;font-weight:700;font-size:17px;" style-hover="background:#24304A;color:#fff;">
+          <span>Get started</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="Verify.dc.html" style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:#fff;color:#172033;font-weight:700;font-size:17px;" style-hover="background:#FFF4EC;color:#172033;">Verify a product</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer style="background:#fff;border-top:1px solid #E4E7EC;overflow:hidden;">
+  <div data-stagger="1" style="max-width:1240px;margin:0 auto;padding:64px clamp(20px,4vw,40px) 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:40px;">
+    <div style="display:flex;flex-direction:column;gap:16px;grid-column:span 1;min-width:220px;">
+      <img src="assets/originx-logo.png" alt="ORIGINX" style="height:44px;width:auto;display:block;align-self:flex-start;"></img>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#475467;max-width:280px;">The verifiable identity layer for physical products. Every handoff provable, every scan honest.</p>
+    </div>
+    <sc-for list="{{ footerCols }}" as="c" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <span style="font-weight:700;font-size:14px;">{{ c.title }}</span>
+        <sc-for list="{{ c.links }}" as="l" hint-placeholder-count="3">
+          <a href="{{ l.href }}" data-route="{{ l.route }}" style="font-size:14px;color:#475467;" style-hover="color:#D9661A;">{{ l.label }}</a>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+  <div style="max-width:1240px;margin:0 auto;padding:20px clamp(20px,4vw,40px);border-top:1px solid #E4E7EC;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:13px;color:#475467;">
+    <span>© 2026 [COMPANY NAME]. All rights reserved.</span>
+    <span>ORIGINX never stores personal data on a blockchain — only cryptographic proofs.</span>
+  </div>
+  <div aria-hidden="true" data-reveal="rise" style="font-family:var(--font-heading);font-size:clamp(80px,19vw,280px);line-height:.8;color:#FDE3CF;text-align:center;user-select:none;margin-bottom:-0.12em;">ORIGINX</div>
+</footer>
+
+<div role="status" aria-live="polite" style="position:fixed;left:50%;bottom:24px;z-index:60;transform:translate(-50%,{{ toastY }}px);opacity:{{ toastOpacity }};transition:opacity .25s ease,transform .35s cubic-bezier(.16,1,.3,1);pointer-events:none;padding:14px 20px;border-radius:999px;background:#172033;color:#fff;font-size:14px;font-weight:600;box-shadow:0 20px 40px -20px rgba(23,32,51,.6);max-width:calc(100vw - 40px);">{{ toastText }}</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;heroVariant&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;split&quot;, &quot;panel&quot;, &quot;chain&quot;], &quot;default&quot;: &quot;split&quot;, &quot;tsType&quot;: &quot;'split' | 'panel' | 'chain'&quot;, &quot;section&quot;: &quot;Hero&quot;}, &quot;autoAdvance&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Behavior&quot;}, &quot;showMarquee&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Behavior&quot;}}">
+const M = { out: 'cubic-bezier(.16,1,.3,1)', inOut: 'cubic-bezier(.65,0,.35,1)', fast: 220, base: 550, slow: 1000, stagger: 70 };
+const BASE = [
+  { type: 'Registered', location: 'Example Pharma, Delhi' },
+  { type: 'Manufactured', location: 'Plant 1, Delhi' },
+  { type: 'Quality approved', location: 'QC Lab, Delhi' },
+  { type: 'Custody → Example Logistics', location: 'Delhi Hub' },
+  { type: 'Warehouse received', location: 'Example Distributor, Gurugram' },
+];
+const GENESIS = '0'.repeat(64);
+const short = (h) => (h ? `${h.slice(0, 6)}…${h.slice(-4)}` : '…');
+const L = (label, desc, href, route) => ({ label, desc, href: href || '#', route: route || '' });
+
+const MENUS = {
+  platform: {
+    label: 'Platform',
+    groups: [
+      { title: 'Identity', links: [L('Digital Product Passports', 'One living record per product or batch', '#features'), L('Tamper-evident history', 'SHA-256 linked lifecycle events', '#tamper'), L('Blockchain proofs', 'Only hashes anchored on-chain', '#features'), L('Explainable trust score', 'A 0–100 score with every point explained', '#features')] },
+      { title: 'Operations', links: [L('Inventory', 'SKU catalog and stock levels', '#', '/app/inventory'), L('Warehouses', 'Sites and what each one holds', '#', '/app/warehouses'), L('Shipments', 'Send, track and confirm receipt', '#', '/app/shipments'), L('Incidents & recalls', 'Raise, review and recall in one step', '#', '/app/recalls')] },
+    ],
+    feat: { kicker: 'Try it', title: 'Edit a record. Watch the chain refuse it.', text: 'A live SHA-256 demo running in your browser.', cta: 'Open the demo', href: '#tamper', route: '' },
+  },
+  solutions: {
+    label: 'Solutions',
+    groups: [
+      { title: 'For organizations', links: [L('Manufacturers & brands', 'Register products, batches and recalls', '#platform'), L('Distributors & logistics', 'Two-party custody transfers', '#features'), L('Warehouses & retailers', 'Stock, shipments and receipts', '#inventory')] },
+      { title: 'For everyone else', links: [L('Consumers', 'Scan a QR — no account needed', 'Verify.dc.html'), L('Regulators & auditors', 'Append-only audit trail', '#security'), L('Why ORIGINX', 'How it compares', '#', '/why-originx')] },
+    ],
+    feat: { kicker: 'Recalls', title: 'Recall a product or a whole batch in one step.', text: 'Every future scan shows a clear RECALLED warning.', cta: 'See how', href: '#features', route: '' },
+  },
+  how: {
+    label: 'How it works',
+    groups: [
+      { title: 'The flow', links: [L('1 · Register', 'Create a passport and print its QR', '#how'), L('2 · Record', 'Hash-linked lifecycle events', '#how'), L('3 · Transfer', 'Custody moves when the receiver accepts', '#how'), L('4 · Verify', 'Anyone scans and sees the evidence', '#how')] },
+      { title: 'Go deeper', links: [L('Full walkthrough', 'Step by step, with screenshots', '#', '/how-it-works'), L('Tamper demo', 'Try to break the chain', '#tamper'), L('Features', 'Everything a passport carries', '#', '/features')] },
+    ],
+    feat: { kicker: 'No account', title: 'Verify a product now.', text: 'Scan the QR or enter the code printed under it.', cta: 'Verify a product', href: 'Verify.dc.html', route: '' },
+  },
+  resources: {
+    label: 'Resources',
+    groups: [
+      { title: 'Learn', links: [L('FAQ', 'Hardware, privacy, recalls and more', '#faq'), L('Security & privacy', 'What goes on-chain and what never does', '#security'), L('Pricing', 'Free, Starter, Growth, Enterprise', '#pricing')] },
+      { title: 'Product', links: [L('Features', 'The full capability list', '#', '/features'), L('Verify a product', 'Public verification page', 'Verify.dc.html'), L('Contact', 'Talk to the team', '#', '/contact')] },
+    ],
+    feat: { kicker: 'No hardware', title: 'Works with the QR codes you already print.', text: 'No IoT sensors, RFID or special hardware needed.', cta: 'Read the FAQ', href: '#faq', route: '' },
+  },
+  company: {
+    label: 'Company',
+    groups: [
+      { title: 'Company', links: [L('Why ORIGINX', 'Compared to ERPs and chain-only tracking', '#', '/why-originx'), L('Security', 'How the platform is built', '#', '/security'), L('Contact', 'Sales and support', '#', '/contact')] },
+      { title: 'Legal', links: [L('Privacy policy', '', '#', '/privacy'), L('Terms of service', '', '#', '/terms'), L('Cookie policy', '', '#', '/cookies')] },
+    ],
+    feat: { kicker: 'Get started', title: 'Create your organization.', text: 'Free for up to 100 products.', cta: 'Sign up', href: '#', route: '/sign-up' },
+  },
+};
+const MENU_KEYS = ['platform', 'solutions', 'how', 'resources', 'company'];
+
+const FEATURES = [
+  { title: 'Digital Product Passport', text: 'One living record for every product or batch: identity, origin, batch, custody, status, proofs and recalls.', points: ['Sealed origin & batch data', 'Unique, unguessable QR token', 'Private and public views'] },
+  { title: 'Tamper-evident history', text: 'Each lifecycle event is SHA-256 linked to the one before it. Edits, deletions and re-ordering are detected instantly.', points: ['Server-computed hashes', 'Database-enforced immutability', 'Exact event pinpointing'] },
+  { title: 'Blockchain proofs', text: 'Identities, events and recall statuses are anchored on an EVM blockchain. Only hashes go on-chain — never your data.', points: ['Write-once anchors', 'Read back on every scan', 'Explorer links for anyone'] },
+  { title: 'Two-party custody', text: 'Custody only moves when the receiving company accepts it. Nobody can assign ownership to someone else.', points: ['Partners only', 'Request → accept → record', 'Both sides audited'] },
+  { title: 'Explainable trust score', text: 'A deterministic 0–100 score from verified facts: organization, origin, custody, cryptography, proofs, incidents.', points: ['Every point explained', 'No black box', 'Score history over time'] },
+  { title: 'Counterfeit detection & recalls', text: 'Product identities are global. A second registration of the same identity is quarantined as a potential counterfeit. Recall a product or a whole batch in one step.', points: ['Identity-collision alerts', 'Cloned-QR scan detection', 'Consumers see RECALLED instantly'] },
+];
+
+const PLANS = [
+  { name: 'Free', price: '₹0', period: 'forever', tagline: 'Pilot ORIGINX with a few SKUs.', limits: ['100 products', '3 team members'], features: ['Digital Product Passports', 'Hash-chained history', 'Blockchain proofs', 'Consumer verification'], cta: 'Start free', route: '/sign-up' },
+  { name: 'Starter', price: 'Contact', period: '', tagline: 'For growing brands and partners.', limits: ['1,000 products', '10 team members'], features: ['Everything in Free', 'Custody transfers & partners', 'Incidents & recalls', 'Analytics'], cta: 'Choose Starter', route: '/contact' },
+  { name: 'Growth', price: 'Contact', period: '', tagline: 'Multi-site supply chains.', limits: ['10,000 products', '50 team members'], features: ['Everything in Starter', 'Batch recalls', 'Audit log exports', 'Priority support'], cta: 'Choose Growth', featured: true, route: '/contact' },
+  { name: 'Enterprise', price: 'Custom', period: '', tagline: 'Regulated, high-volume networks.', limits: ['Custom limits', 'Custom roles'], features: ['Everything in Growth', 'Dedicated chain & contract', 'SLA & security review', 'On-boarding for partners'], cta: 'Talk to us', route: '/contact' },
+];
+
+const FAQ = [
+  ['Do we need IoT sensors, RFID or special hardware?', 'No. ORIGINX works with the QR codes you already print. Lifecycle events are recorded by the people and systems that handle the product.'],
+  ['What actually goes on the blockchain?', 'Only 32-byte cryptographic hashes: the product identity, each anchored event, and status changes such as recalls. No names, addresses, documents or personal data.'],
+  ['What stops someone from editing our records?', 'Three layers: the database refuses edits to history, every event is hash-linked to the one before it, and the original hashes are anchored on a blockchain that cannot be rewritten.'],
+  ['How is a counterfeit detected?', 'Product identities are global. If another organization registers an identity that already exists, the new record is quarantined, the genuine owner is alerted and anyone scanning the clone sees COUNTERFEIT.'],
+  ['Do consumers need an app or account?', 'No. Scanning the QR opens a public verification page in any browser. It only shows approved, non-sensitive information.'],
+  ['Can one company see another company\'s data?', 'No. Every organization\'s data is isolated on the server. Partners only see the shared custody history of products they have actually handled.'],
+  ['What happens during a recall?', 'The brand owner recalls a product or batch. Every unit is marked recalled, the status is anchored on-chain, and every future scan shows a clear RECALLED warning.'],
+];
+
+const INDUSTRIES = ['Pharmaceuticals', 'Vaccines & biologics', 'Consumer electronics', 'Luxury goods', 'Auto parts', 'Food & beverage', 'Cosmetics', 'Agrochemicals', 'Medical devices', 'Spirits & wine'];
+
+const PHONE = {
+  authentic: { bg: '#1F8A5B', kicker: 'Authentic product', headline: 'Amoxicillin 250 mg is genuine.', detail: 'Identity, history and blockchain proofs all match.', checks: [['Identity', 'Matches the original registration', true], ['History', '5 of 5 events verified', true], ['Blockchain proof', '5 anchors match the chain', true]] },
+  recalled: { bg: '#B42318', kicker: 'Recalled — do not use', headline: 'Batch B-2041 has been recalled.', detail: 'Stop using this product and contact the seller or the brand for instructions.', checks: [['Identity', 'Matches the original registration', true], ['History', '6 of 6 events verified', true], ['Recall status', 'Anchored on-chain', true]] },
+  counterfeit: { bg: '#B42318', kicker: 'Potential counterfeit', headline: 'This identity was already registered.', detail: 'The original owner has been alerted. Do not trust this product.', checks: [['Identity', 'Conflicts with an existing product', false], ['History', 'Quarantined record', false], ['Blockchain proof', 'No matching anchor', false]] },
+};
+
+class Component extends DCLogic {
+  state = { scrolled: false, menu: null, mobile: typeof window !== 'undefined' && window.innerWidth < 980, mOpen: false, mSec: null, feat: 0, cap: 'identity', phone: 'authentic', faq: 0, toast: null, toastOn: false, mode: 'intact', blocks: [], recomputed: [], anchors: [], invStep: -1 };
+  marqueeRef = React.createRef();
+  invRef = React.createRef();
+  invLineRef = React.createRef();
+
+  componentDidMount() {
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.onScroll = () => { const s = window.scrollY > 12; if (s !== this.state.scrolled) this.setState({ scrolled: s }); if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; this.updInv(); this.parallax(); }); };
+    this.onResize = () => { this.placePills(); const m = window.innerWidth < 980; if (m !== this.state.mobile) this.setState({ mobile: m, menu: null, mOpen: false }); };
+    this.onKey = (e) => { if (e.key === 'Escape' && (this.state.menu || this.state.mOpen)) this.setState({ menu: null, mOpen: false }); };
+    this.onDocClick = (e) => {
+      const a = e.target.closest && e.target.closest('[data-route]');
+      const route = a && a.getAttribute('data-route');
+      if (route) { e.preventDefault(); this.showToast(`In the app this opens ${route}`); this.setState({ menu: null, mOpen: false }); return; }
+      if (this.state.menu && !e.target.closest('header')) this.setState({ menu: null });
+    };
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    window.addEventListener('resize', this.onResize);
+    document.addEventListener('keydown', this.onKey);
+    document.addEventListener('click', this.onDocClick);
+    this.onScroll();
+    this.setupReveal();
+    this.setupMarquee();
+    this.tamperReset();
+    setTimeout(() => this.schedFeat(), 400);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('resize', this.onResize);
+    document.removeEventListener('keydown', this.onKey);
+    document.removeEventListener('click', this.onDocClick);
+    clearTimeout(this.ft); clearTimeout(this.tt); clearTimeout(this.closeT); clearTimeout(this.openT);
+    this.io && this.io.disconnect();
+    this._nudgeOff && this._nudgeOff();
+    cancelAnimationFrame(this._raf);
+    this.mq && this.mq.cancel();
+  }
+  componentDidUpdate() {
+    const prev = this._prev || this.state;
+    const S = this.state;
+    this._prev = { mode: S.mode, cap: S.cap, phone: S.phone, feat: S.feat, menu: S.menu, mOpen: S.mOpen };
+    if (prev.mode !== S.mode && S.mode !== 'intact' && !this.reduced) {
+      document.querySelectorAll('[data-bad="true"]').forEach((el, i) => el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }], { duration: 500, delay: 100 + i * 120 }));
+    }
+    if (prev.cap !== S.cap || prev.phone !== S.phone || prev.feat !== S.feat) this.popIn();
+    if (S.menu && prev.menu !== S.menu && !this.reduced) {
+      document.querySelectorAll('[data-menucol]').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: M.base, delay: (prev.menu ? 0 : 60) + i * M.stagger, easing: M.out, fill: 'backwards' }));
+    }
+    if (S.mOpen && !prev.mOpen && !this.reduced) {
+      requestAnimationFrame(() => document.querySelectorAll('[data-mitem]').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateX(-14px)' }, { opacity: 1, transform: 'none' }], { duration: M.base, delay: 40 + i * 45, easing: M.out, fill: 'backwards' })));
+    }
+    this.placePills();
+  }
+  placePills() {
+    document.querySelectorAll('[data-tabs]').forEach((c) => {
+      const pill = c.querySelector('[data-pill]'), on = c.querySelector('[aria-selected="true"]');
+      if (!pill || !on) return;
+      pill.style.width = on.offsetWidth + 'px'; pill.style.height = on.offsetHeight + 'px';
+      pill.style.transform = `translate(${on.offsetLeft}px, ${on.offsetTop}px)`;
+    });
+  }
+  parallax() {
+    if (this.reduced || !this.px) return;
+    const vh = window.innerHeight;
+    this.px.forEach(({ el, f }) => {
+      const sec = el.closest('section') || el.parentElement;
+      const r = sec.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > vh + 200) return;
+      const d = (r.top + r.height / 2 - vh / 2) * f;
+      el.style.transform = `translate3d(0,${d.toFixed(1)}px,0)`;
+    });
+  }
+  arrowNudge() {
+    const over = (e) => {
+      const t = e.target.closest && e.target.closest('a,button');
+      if (!t || t.contains(e.relatedTarget)) return;
+      const svg = t.querySelector('svg[data-arrow]');
+      if (svg) svg.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(4px)' }], { duration: M.fast, easing: M.out, fill: 'forwards' });
+    };
+    const out = (e) => {
+      const t = e.target.closest && e.target.closest('a,button');
+      if (!t || t.contains(e.relatedTarget)) return;
+      const svg = t.querySelector('svg[data-arrow]');
+      if (svg) svg.animate([{ transform: 'translateX(4px)' }, { transform: 'translateX(0)' }], { duration: M.fast, easing: M.out, fill: 'forwards' });
+    };
+    document.addEventListener('mouseover', over); document.addEventListener('mouseout', out);
+    this._nudgeOff = () => { document.removeEventListener('mouseover', over); document.removeEventListener('mouseout', out); };
+  }
+  popIn() {
+    if (this.reduced) return;
+    clearTimeout(this.popT);
+    this.popT = setTimeout(() => {
+      document.querySelectorAll('#platform [data-reveal] > div:last-child > div, #verify [data-reveal]:last-child > div:last-child, #features [data-reveal] > div:last-child > div').forEach((el) => el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' }));
+    }, 0);
+  }
+  setupReveal() {
+    this.px = Array.from(document.querySelectorAll('[data-parallax]')).map((el) => ({ el, f: +el.getAttribute('data-parallax') }));
+    this.placePills();
+    if (this.reduced) return;
+    this.arrowNudge();
+    // page-load choreography: header, then hero sequence
+    const header = document.querySelector('header');
+    if (header) {
+      header.animate([{ opacity: 0, transform: 'translateY(-16px)' }, { opacity: 1, transform: 'none' }], { duration: M.base, easing: M.out, fill: 'backwards' });
+      header.querySelectorAll('nav > *').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: M.base, delay: 120 + i * M.stagger, easing: M.out, fill: 'backwards' }));
+    }
+    document.querySelectorAll('[data-hero]').forEach((el) => {
+      const i = +el.getAttribute('data-hero');
+      const inH1 = el.parentElement && el.parentElement.tagName === 'H1';
+      const delay = 260 + i * 110;
+      if (inH1) {
+        el.animate([{ clipPath: 'inset(0 0 100% 0)', transform: 'translateY(0.35em)' }, { clipPath: 'inset(-20% -5% -25% -5%)', transform: 'none' }], { duration: M.slow, delay, easing: M.out, fill: 'backwards' });
+      } else if (el.tagName === 'SPAN' || el.tagName === 'P' || el.getAttribute('data-hero') === '4') {
+        el.animate([{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { duration: M.base + 150, delay, easing: M.out, fill: 'backwards' });
+      } else {
+        el.animate([{ opacity: 0, transform: 'translateY(48px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: M.slow + 200, delay: delay + 120, easing: M.out, fill: 'backwards' });
+      }
+    });
+    // scroll reveals with section-specific patterns
+    const play = (el) => {
+      const kind = el.getAttribute('data-reveal');
+      if (el.hasAttribute('data-stagger')) {
+        Array.from(el.children).forEach((k, i) => k.animate([{ opacity: 0, transform: 'translateY(28px)' }, { opacity: 1, transform: 'none' }], { duration: M.base + 150, delay: i * M.stagger, easing: M.out, fill: 'backwards' }));
+        return;
+      }
+      if (kind === 'clip') {
+        el.animate([{ clipPath: 'inset(8% 5% 8% 5% round 48px)', transform: 'translateY(40px)' }, { clipPath: 'inset(0% 0% 0% 0% round 48px)', transform: 'none' }], { duration: M.slow + 200, easing: M.out, fill: 'backwards' });
+        return;
+      }
+      if (kind === 'rise') {
+        el.animate([{ opacity: 0, transform: 'translateY(35%)' }, { opacity: 1, transform: 'none' }], { duration: M.slow + 400, easing: M.out, fill: 'backwards' });
+        return;
+      }
+      const h2 = Array.from(el.children).find((c) => c.tagName === 'H2') || (el.firstElementChild && Array.from(el.firstElementChild.children || []).find((c) => c.tagName === 'H2'));
+      if (h2) {
+        const group = h2.parentElement === el ? Array.from(el.children) : Array.from(el.children).flatMap((c) => (c.contains(h2) ? Array.from(c.children) : [c]));
+        group.forEach((k, i) => {
+          if (k === h2) k.animate([{ clipPath: 'inset(0 0 100% 0)', transform: 'translateY(0.3em)' }, { clipPath: 'inset(-20% -5% -25% -5%)', transform: 'none' }], { duration: M.slow, delay: i * M.stagger, easing: M.out, fill: 'backwards' });
+          else k.animate([{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], { duration: M.base + 150, delay: i * M.stagger, easing: M.out, fill: 'backwards' });
+        });
+        return;
+      }
+      el.animate([{ opacity: 0, transform: 'translateY(32px)' }, { opacity: 1, transform: 'none' }], { duration: M.base + 200, easing: M.out, fill: 'backwards' });
+    };
+    this.io = new IntersectionObserver((es) => es.forEach((en) => { if (!en.isIntersecting) return; this.io.unobserve(en.target); play(en.target); }), { threshold: 0, rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('[data-reveal],[data-stagger]').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) return;
+      this.io.observe(el);
+    });
+    this.parallax();
+  }
+  setupMarquee() {
+    const el = this.marqueeRef.current;
+    if (!el || this.reduced) return;
+    this.mq = el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }], { duration: 42000, iterations: Infinity });
+    el.addEventListener('mouseenter', () => this.mq && this.mq.pause());
+    el.addEventListener('mouseleave', () => this.mq && this.mq.play());
+  }
+  updInv() {
+    const sec = this.invRef.current, line = this.invLineRef.current;
+    if (!sec || !line) return;
+    const r = sec.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (window.innerHeight * 0.75 - r.top) / (r.height * 0.7)));
+    line.style.transform = `scaleX(${this.reduced ? 1 : p})`;
+    const step = this.reduced ? 5 : Math.floor(p * 6.2) - 1;
+    if (step !== this.state.invStep) this.setState({ invStep: step });
+  }
+  showToast(text) {
+    clearTimeout(this.tt);
+    this.setState({ toast: text, toastOn: true });
+    this.tt = setTimeout(() => this.setState({ toastOn: false }), 2600);
+  }
+  // nav
+  openMenu(key, immediate) {
+    clearTimeout(this.closeT); clearTimeout(this.openT);
+    if (this.state.menu || immediate) this.setState({ menu: key });
+    else this.openT = setTimeout(() => this.setState({ menu: key }), 70);
+  }
+  // features auto-advance
+  schedFeat() {
+    clearTimeout(this.ft);
+    this.fa && this.fa.cancel();
+    if (this.props.autoAdvance === false || this.featHold) return;
+    const dur = 6500;
+    const bar = document.querySelector(`[data-feat-bar="${this.state.feat}"]`);
+    if (bar && !this.reduced) this.fa = bar.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: dur, easing: 'linear', fill: 'forwards' });
+    if (this.reduced) return;
+    this.ft = setTimeout(() => this.setState((s) => ({ feat: (s.feat + 1) % FEATURES.length }), () => this.schedFeat()), dur);
+  }
+  // tamper demo
+  async sha(t) { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join(''); }
+  payload(b, seq) { return JSON.stringify({ seq, type: b.type, location: b.location }); }
+  async chain(items) { const out = []; let prev = GENESIS; for (const [i, it] of items.entries()) { const hash = await this.sha(`${this.payload(it, i + 1)}|${prev}`); out.push({ ...it, prev, hash }); prev = hash; } return out; }
+  async applyBlocks(blocks, mode, anchors) {
+    const recomputed = await Promise.all(blocks.map((b, i) => this.sha(`${this.payload(b, i + 1)}|${b.prev}`)));
+    this.setState(Object.assign({ blocks, recomputed, mode }, anchors ? { anchors } : {}));
+  }
+  tamperReset = async () => { try { const c = await this.chain(BASE); await this.applyBlocks(c, 'intact', c.map((b) => b.hash)); } catch (e) { console.warn('SHA-256 unavailable', e); } };
+  tamperNaive = async () => { const c = await this.chain(BASE); c[2] = { ...c[2], location: 'Unlicensed site, Noida' }; await this.applyBlocks(c, 'naive'); };
+  tamperRewrite = async () => { const e = BASE.map((b, i) => (i === 2 ? { ...b, location: 'Unlicensed site, Noida' } : b)); await this.applyBlocks(await this.chain(e), 'rewrite'); };
+
+  renderVals() {
+    const S = this.state;
+    const variant = this.props.heroVariant ?? 'split';
+    const menu = S.menu ? MENUS[S.menu] : MENUS.platform;
+    const solid = S.scrolled || S.menu || S.mOpen;
+
+    const navItems = MENU_KEYS.map((k) => ({
+      label: MENUS[k].label, expanded: S.menu === k, rot: S.menu === k ? 180 : 0, bg: S.menu === k ? '#F7F8FA' : 'transparent',
+      enter: () => this.openMenu(k), click: () => (S.menu === k ? this.setState({ menu: null }) : this.openMenu(k, true)),
+    }));
+    const mobileItems = MENU_KEYS.map((k) => ({
+      label: MENUS[k].label, open: S.mSec === k, rot: S.mSec === k ? 180 : 0, rows: S.mSec === k ? '1fr' : '0fr',
+      links: MENUS[k].groups.flatMap((g) => g.links), toggle: () => this.setState({ mSec: S.mSec === k ? null : k }),
+    }));
+
+    // tamper view model
+    const blocks = S.blocks.length ? S.blocks : BASE.map((b) => ({ ...b, prev: '', hash: '' }));
+    const status = blocks.map((b, i) => ({ contentOk: !S.recomputed[i] || S.recomputed[i] === b.hash, linkOk: !b.hash || b.prev === (i === 0 ? GENESIS : blocks[i - 1].hash), anchorOk: !S.anchors[i] || S.anchors[i] === b.hash }));
+    const firstBad = status.findIndex((s) => !s.contentOk || !s.linkOk || !s.anchorOk);
+    const dbOk = status.every((s) => s.contentOk && s.linkOk);
+    const chainOk = firstBad === -1;
+    const blockView = blocks.map((b, i) => {
+      const s = status[i];
+      const tampered = !s.contentOk, exposed = s.contentOk && !s.anchorOk;
+      const affected = firstBad !== -1 && i > firstBad && !tampered && !exposed;
+      const bad = tampered || exposed;
+      return {
+        n: i + 1, type: b.type, location: b.location, prev: short(b.prev), hash: short(b.hash), re: short(S.recomputed[i]), showRe: tampered, bad: bad ? 'true' : 'false',
+        border: bad ? 'rgba(240,68,56,.6)' : affected ? 'rgba(247,144,9,.5)' : 'rgba(255,255,255,.1)',
+        bg: bad ? 'rgba(240,68,56,.12)' : affected ? 'rgba(247,144,9,.1)' : 'rgba(255,255,255,.04)',
+        badge: tampered ? 'Tampered' : exposed ? 'Not on chain' : affected ? 'Affected' : 'Valid',
+        badgeBg: bad ? '#F04438' : affected ? '#F79009' : 'rgba(50,213,131,.18)', badgeFg: bad ? '#fff' : affected ? '#172033' : '#32D583',
+        locColor: i === 2 && S.mode !== 'intact' ? '#F97066' : '#98A2B3', locWeight: i === 2 && S.mode !== 'intact' ? 700 : 400,
+        hashColor: bad ? '#F97066' : '#E4E7EC',
+      };
+    });
+    const anchorView = (S.anchors.length ? S.anchors : blocks.map(() => '')).map((a, i) => {
+      const ok = !a || blocks[i].hash === a;
+      return { hash: short(a), border: ok ? 'rgba(50,213,131,.3)' : 'rgba(240,68,56,.5)', bg: ok ? 'rgba(50,213,131,.07)' : 'rgba(240,68,56,.1)', dot: ok ? '#32D583' : '#F04438' };
+    });
+    const verdict = chainOk
+      ? { title: 'History verified — 5 / 5 events intact', text: 'Every hash recomputes, every link matches, every anchor agrees with the blockchain.', bg: 'rgba(50,213,131,.1)', border: 'rgba(50,213,131,.3)' }
+      : S.mode === 'naive'
+        ? { title: 'HISTORY COMPROMISED', text: 'Event #3 no longer matches its own hash. It and every event after it can no longer be trusted.', bg: 'rgba(240,68,56,.1)', border: 'rgba(240,68,56,.35)' }
+        : { title: 'HISTORY COMPROMISED', text: "The attacker recomputed every hash, so the database chain looks perfectly consistent — but the hashes anchored on the blockchain can't be rewritten. Events #3 to #5 are exposed.", bg: 'rgba(240,68,56,.1)', border: 'rgba(240,68,56,.35)' };
+
+    const cap = S.cap === 'identity'
+      ? { title: 'A Digital Product Passport for every unit or batch.', text: 'Identity, origin, batch, custody, status, proofs and recalls live in one record that consumers can check with a single scan.', points: ['Hash-chained lifecycle events', 'Blockchain-anchored proofs', 'Two-party custody transfers', 'Explainable trust score', 'Counterfeit and recall signals'], dot: '#F07824', panel: '#FFF4EC' }
+      : { title: 'Stock, sites and shipments in the same panel.', text: 'Manage your SKU catalog, warehouses, stock movements and shipments alongside the passports they belong to. Recalled stock is quarantined.', points: ['SKU catalog', 'Warehouses', 'Stock movements', 'Shipments and receipt tracking', 'Recall quarantine'], dot: '#2864DC', panel: '#EAF0FC' };
+
+    const phone = PHONE[S.phone];
+    const featCur = FEATURES[S.feat];
+
+    return {
+      desktop: !S.mobile, mobile: S.mobile, mOpen: S.mOpen, mClosed: !S.mOpen, mobileLabel: S.mOpen ? 'Close menu' : 'Open menu',
+      toggleMobile: () => this.setState({ mOpen: !S.mOpen }), closeMobile: () => this.setState({ mOpen: false }),
+      headerBg: solid ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,0)', headerBorder: solid ? '#E4E7EC' : 'transparent', headerShadow: S.scrolled && !S.menu ? '0 10px 30px -22px rgba(23,32,51,.35)' : 'none',
+      navItems, mobileItems,
+      headerLeave: () => { clearTimeout(this.openT); this.closeT = setTimeout(() => this.setState({ menu: null }), 160); },
+      panelEnter: () => clearTimeout(this.closeT),
+      closeMenu: () => this.setState({ menu: null }),
+      menuOpacity: S.menu ? 1 : 0, menuY: S.menu ? 0 : -8, menuPE: S.menu ? 'auto' : 'none', menuVis: S.menu ? 'visible' : 'hidden',
+      menuGroups: menu.groups, menuFeat: menu.feat,
+
+      heroSplit: variant === 'split', heroPanel: variant === 'panel', heroChain: variant === 'chain',
+      passportFields: [{ k: 'Product ID', v: 'OX-7F3K-2041' }, { k: 'Batch', v: 'B-2041' }, { k: 'Origin', v: 'Plant 1, Delhi' }, { k: 'Status', v: 'In distribution' }],
+      checks: [{ label: 'Identity', detail: 'Matches the original registration' }, { label: 'History', detail: '5 of 5 events verified' }, { label: 'Blockchain proof', detail: '5 anchors match the chain' }],
+      ribbon: BASE.map((b, i) => ({ n: `0${i + 1}`, type: b.type, loc: b.location, hash: short(S.blocks[i] && S.blocks[i].hash), link: i < BASE.length - 1, bg: i === BASE.length - 1 ? '#172033' : i % 2 ? '#EAF0FC' : '#FFF4EC', fg: i === BASE.length - 1 ? '#fff' : '#172033' })),
+
+      showMarquee: this.props.showMarquee ?? true,
+      marqueeRef: this.marqueeRef, industriesLoop: INDUSTRIES.concat(INDUSTRIES),
+
+      capTabs: [['identity', 'Product identity'], ['inventory', 'Inventory operations']].map(([k, label]) => ({ label, on: S.cap === k, bg: 'transparent', fg: S.cap === k ? '#172033' : '#475467', shadow: 'none', select: () => this.setState({ cap: k }) })),
+      cap, capIdentity: S.cap === 'identity', capInventory: S.cap === 'inventory',
+      journey: BASE.map((b, i) => ({ n: i + 1, type: b.type, loc: b.location, proof: i === 4 ? 'pending' : 'anchored', proofColor: i === 4 ? '#B54708' : '#2864DC' })),
+      stock: [
+        { sku: 'AMX-250-30', site: 'Gurugram DC', qty: '1,240', status: 'Available', bg: '#E7F6EE', fg: '#14663F' },
+        { sku: 'AMX-250-30', site: 'Delhi Hub', qty: '310', status: 'In transit', bg: '#EAF0FC', fg: '#1C4BB4' },
+        { sku: 'PCM-500-10', site: 'Gurugram DC', qty: '860', status: 'Available', bg: '#E7F6EE', fg: '#14663F' },
+        { sku: 'AMX-250-30 · B-1987', site: 'Noida WH', qty: '96', status: 'Quarantined', bg: '#FDECEC', fg: '#A12A2A' },
+        { sku: 'ORS-200-20', site: 'Delhi Hub', qty: '0', status: 'Out of stock', bg: '#F2F4F7', fg: '#475467' },
+      ],
+
+      feats: FEATURES.map((f, i) => ({ i, n: i + 1, title: f.title, text: f.text, on: S.feat === i, bg: S.feat === i ? '#fff' : 'transparent', shadow: S.feat === i ? '0 14px 30px -20px rgba(23,32,51,.35)' : 'none', barStatic: this.props.autoAdvance === false || this.reduced ? 1 : 0, select: () => this.setState({ feat: i }, () => this.schedFeat()) })),
+      featHoldOn: () => { this.featHold = true; clearTimeout(this.ft); this.fa && this.fa.pause(); },
+      featHoldOff: () => { this.featHold = false; this.schedFeat(); },
+      featCur, f0: S.feat === 0, f1: S.feat === 1, f2: S.feat === 2, f3: S.feat === 3, f4: S.feat === 4, f5: S.feat === 5,
+      passportAll: [{ k: 'Product', v: 'Amoxicillin 250 mg' }, { k: 'Brand', v: 'Example Pharma' }, { k: 'Product ID', v: 'OX-7F3K-2041' }, { k: 'Batch', v: 'B-2041' }, { k: 'Origin', v: 'Plant 1, Delhi' }, { k: 'Made / Expires', v: 'Mar 2026 / Mar 2028' }],
+      hashRows: blocks.slice(0, 4).map((b, i) => ({ n: `0${i + 1}`, type: b.type, prev: short(b.prev), hash: short(b.hash), link: i < 3 })),
+      anchorRows: [
+        { what: 'Product identity', hash: short(S.anchors[0]), status: 'Anchored', bg: '#E7F6EE', fg: '#14663F' },
+        { what: 'Event #04 · Custody', hash: short(S.anchors[3]), status: 'Anchored', bg: '#E7F6EE', fg: '#14663F' },
+        { what: 'Event #05 · Warehouse received', hash: short(S.anchors[4]), status: 'Pending', bg: '#FEF0C7', fg: '#93370D' },
+      ],
+      custodySteps: [
+        { n: 1, title: 'Request', text: 'The sender proposes a transfer to a partner.', bg: '#FFF4EC', fg: '#172033' },
+        { n: 2, title: 'Accept', text: 'Only the receiving company can accept it.', bg: '#EAF0FC', fg: '#172033' },
+        { n: 3, title: 'Record', text: 'The handoff becomes a hash-linked event, audited on both sides.', bg: '#172033', fg: '#fff' },
+      ],
+      trustFactors: [{ k: 'Organization verified', v: '+20', c: '#14663F' }, { k: 'Origin sealed', v: '+15', c: '#14663F' }, { k: 'Custody unbroken', v: '+20', c: '#14663F' }, { k: 'Hash chain intact', v: '+20', c: '#14663F' }, { k: 'Proofs anchored', v: '+17', c: '#14663F' }, { k: 'Open incidents', v: '0', c: '#475467' }],
+
+      tamperNaive: this.tamperNaive, tamperRewrite: this.tamperRewrite, tamperReset: this.tamperReset,
+      naiveDisabled: S.mode === 'naive', rewriteDisabled: S.mode === 'rewrite', resetDisabled: S.mode === 'intact',
+      naiveOpacity: S.mode === 'naive' ? 0.45 : 1, rewriteOpacity: S.mode === 'rewrite' ? 0.45 : 1, resetOpacity: S.mode === 'intact' ? 0.45 : 1,
+      verdict, blockView, anchorView,
+      dbBadge: dbOk ? { text: 'hash chain consistent', bg: 'rgba(50,213,131,.15)', fg: '#32D583' } : { text: 'hash chain broken', bg: 'rgba(240,68,56,.15)', fg: '#F97066' },
+
+      invRef: this.invRef, invLineRef: this.invLineRef,
+      invSteps: [
+        ['SKU catalog', 'Products and SKUs with stock levels per site.'],
+        ['Warehouses', 'Every site and what it is holding.'],
+        ['Stock movements', 'Receipts, transfers and adjustments, logged.'],
+        ['Shipments', 'Pick units and send them to a partner.'],
+        ['Receipt', 'The receiving side confirms what arrived.'],
+        ['Recall quarantine', 'Recalled stock is held back.'],
+      ].map(([title, text], i) => { const on = i <= S.invStep; return { n: i + 1, title, text, bg: on ? '#2864DC' : '#fff', fg: on ? '#fff' : '#172033', ring: on ? '#2864DC' : '#E4E7EC' }; }),
+
+      phoneTabs: [['authentic', 'Authentic'], ['recalled', 'Recalled'], ['counterfeit', 'Counterfeit']].map(([k, label]) => ({ label, on: S.phone === k, bg: 'transparent', fg: S.phone === k ? '#fff' : '#172033', select: () => this.setState({ phone: k }) })),
+      phone: { ...phone, checks: phone.checks.map(([label, detail, ok]) => ({ label, detail, icon: ok ? '✓' : '✕', bg: ok ? '#E7F6EE' : '#FDECEC', fg: ok ? '#1F8A5B' : '#B42318' })) },
+      consumerPoints: ['Scan a QR — no account', 'Authenticity & origin', 'Full journey timeline', 'Trust score & blockchain proof', 'Unmissable recall warnings'],
+
+      howSteps: [
+        ['Register', 'Create a passport for each product or batch and print its unique QR code.'],
+        ['Record', 'Log lifecycle events as the product is made, checked and stored. Each one is hash-linked to the last.'],
+        ['Transfer', 'Send custody to a partner. It only moves when they accept it.'],
+        ['Verify', 'Anyone scans the QR and sees origin, journey, trust score and proof status.'],
+      ].map(([title, text], i) => ({ n: i + 1, title, text, bg: ['#FDE3CF', '#EAF0FC', '#FDE3CF', '#172033'][i], fg: i === 3 ? '#fff' : '#172033' })),
+
+      privacy: [
+        ['Only hashes on-chain', 'Organization data, documents and personal data never touch the blockchain.', '#FDE3CF'],
+        ['Isolated tenants', "Every company's data is separated and enforced on the server — never just hidden in the UI.", '#EAF0FC'],
+        ['No consumer accounts', 'Verification needs no sign-up. Scans are logged with salted hashes, never raw IPs.', '#FDE3CF'],
+        ['Honest by default', "If the chain can't be reached, proofs say PENDING. Nothing is ever faked or assumed.", '#EAF0FC'],
+      ].map(([title, text, bg]) => ({ title, text, bg })),
+
+      plans: PLANS.map((p) => ({ ...p, featured: !!p.featured, bg: p.featured ? '#172033' : '#fff', fg: p.featured ? '#fff' : '#172033', border: p.featured ? '#172033' : '#E4E7EC', chip: p.featured ? 'rgba(255,255,255,.1)' : '#F7F8FA', tick: p.featured ? '#F7A66A' : '#D9661A', ctaBg: p.featured ? '#F07824' : '#fff', ctaFg: '#172033', ctaBorder: p.featured ? '#F07824' : '#172033' })),
+
+      faqs: FAQ.map(([q, a], i) => ({ q, a, open: S.faq === i, op: S.faq === i ? 1 : 0, dy: S.faq === i ? 0 : -6, rows: S.faq === i ? '1fr' : '0fr', rot: S.faq === i ? 45 : 0, iconBg: S.faq === i ? '#F07824' : '#F7F8FA', iconFg: '#172033', toggle: () => this.setState({ faq: S.faq === i ? -1 : i }) })),
+
+      footerCols: [
+        { title: 'Product', links: [L('Features', '', '#', '/features'), L('How it works', '', '#how'), L('Pricing', '', '#pricing'), L('Verify a product', '', 'Verify.dc.html')] },
+        { title: 'Company', links: [L('Why ORIGINX', '', '#', '/why-originx'), L('Security', '', '#', '/security'), L('Contact', '', '#', '/contact')] },
+        { title: 'Legal', links: [L('Privacy policy', '', '#', '/privacy'), L('Terms of service', '', '#', '/terms'), L('Cookie policy', '', '#', '/cookies')] },
+        { title: 'Account', links: [L('Sign in', '', '#', '/sign-in'), L('Create organization', '', '#', '/sign-up')] },
+      ],
+
+      reactFox: () => window.dispatchEvent(new CustomEvent('ox-mascot-react')),
+      toastText: S.toast || '', toastOpacity: S.toastOn ? 1 : 0, toastY: S.toastOn ? 0 : 16,
+    };
+  }
+}
+</script>
+</body>
+</html>

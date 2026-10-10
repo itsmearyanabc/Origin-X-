@@ -1,27 +1,13 @@
 import { useEffect } from "react";
-import { Hero } from "./sections/Hero";
-import { Journey } from "./sections/Journey";
-import { TamperDemo } from "./sections/TamperDemo";
-import { Experiences, Faq, FeatureBento, FinalCta, IndustryMarquee, PricingTeaser, PrivacyStrip, Problem, WhyChoose } from "./sections/Sections";
-
+/**
+ * The public landing experience is the supplied Claude Design export. It is
+ * retained as a self-contained bundle so its original typography, responsive
+ * layout and interaction timing are not approximated by a second build.
+ */
 export default function Landing() {
   useEffect(() => {
-    document.title = "ORIGINX — Verifiable Identity for Physical Products";
+    document.title = "ORIGINX — Verifiable identity for physical products";
   }, []);
-  return (
-    <>
-      <Hero />
-      <IndustryMarquee />
-      <Problem />
-      <Journey />
-      <TamperDemo />
-      <FeatureBento />
-      <Experiences />
-      <WhyChoose />
-      <PrivacyStrip />
-      <PricingTeaser />
-      <Faq />
-      <FinalCta />
-    </>
-  );
+
+  return <iframe title="ORIGINX" src="/claude-design/Origin%20X%20Landing.html" className="block h-dvh w-full border-0 bg-white" allow="clipboard-read; clipboard-write" />;
 }

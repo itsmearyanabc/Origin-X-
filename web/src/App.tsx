@@ -85,8 +85,8 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         {/* Public website */}
+        <Route index element={<Landing />} />
         <Route element={<MarketingLayout />}>
-          <Route index element={<Landing />} />
           <Route path="features" element={<FeaturesPage />} />
           <Route path="how-it-works" element={<HowItWorksPage />} />
           <Route path="why-originx" element={<WhyPage />} />
