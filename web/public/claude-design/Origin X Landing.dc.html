@@ -104,6 +104,34 @@ span[data-hero="0"] {
   will-change: transform;
 }
 </style>
+
+<style>
+/* Luxury Animations */
+#luxury-scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  background: linear-gradient(90deg, #F07824, #F7A66A);
+  z-index: 9999;
+  transform-origin: 0% 50%;
+  transform: scaleX(0);
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* 3D Tilt Container */
+.luxury-tilt {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+/* Magnetic Button */
+.luxury-magnetic {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease !important;
+  will-change: transform;
+}
+</style>
 </head>
 <body>
 <x-dc>
@@ -1443,6 +1471,77 @@ class Component extends DCLogic {
   };
 
   setTimeout(initHeroAdvanced, 200);
+})();
+</script>
+
+<script>
+(function() {
+  const initLuxury = () => {
+    // 1. Scroll Progress Bar
+    if (!document.getElementById('luxury-scroll-progress')) {
+      const bar = document.createElement('div');
+      bar.id = 'luxury-scroll-progress';
+      document.body.appendChild(bar);
+      
+      const updateScroll = () => {
+        const scrollPx = document.documentElement.scrollTop || document.body.scrollTop;
+        const winHeightPx = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = `${scrollPx / winHeightPx}`;
+        bar.style.transform = `scaleX(${scrolled})`;
+      };
+      window.addEventListener('scroll', updateScroll, { passive: true });
+      updateScroll();
+    }
+
+    // 2. Magnetic CTAs
+    const magneticBtns = document.querySelectorAll('a[data-route="/sign-up"], a[data-route="/sign-in"]');
+    magneticBtns.forEach(btn => {
+      btn.classList.add('luxury-magnetic');
+      
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        // Move button slightly towards cursor
+        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px) scale(1.02)`;
+      });
+      
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = `translate(0px, 0px) scale(1)`;
+      });
+    });
+
+    // 3. 3D Tilt on Feature/Pricing Cards
+    // Find all cards (role=tab features, and pricing plans with border-radius:24px)
+    const cards = document.querySelectorAll('button[role="tab"], div[style*="border-radius:24px"], div[style*="border-radius:32px"], div[style*="border-radius: 24px"], div[style*="border-radius: 32px"]');
+    cards.forEach(card => {
+      // Don't tilt tiny elements or inputs
+      if (card.tagName.toLowerCase() === 'input' || card.clientWidth < 150) return;
+      
+      card.classList.add('luxury-tilt');
+      
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const xPct = (x / rect.width - 0.5) * 2; // -1 to 1
+        const yPct = (y / rect.height - 0.5) * 2; // -1 to 1
+        
+        // Remove transition during movement for zero lag
+        card.style.transition = 'none';
+        card.style.transform = `perspective(1000px) rotateX(${yPct * -4}deg) rotateY(${xPct * 4}deg) scale3d(1.01, 1.01, 1.01)`;
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        card.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+    });
+  };
+
+  setTimeout(initLuxury, 250);
 })();
 </script>
 </body>
