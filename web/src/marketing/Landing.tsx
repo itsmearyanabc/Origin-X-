@@ -7,7 +7,11 @@ import { useEffect } from "react";
 export default function Landing() {
   useEffect(() => {
     document.title = "ORIGINX — Verifiable identity for physical products";
+    // Load the exported page as the top-level document. The design bundle
+    // creates blob-backed runtime documents, which inherit the embedding
+    // document's CSP when shown inside an iframe.
+    window.location.replace("/claude-design/Origin%20X%20Landing.html");
   }, []);
 
-  return <iframe title="ORIGINX" src="/claude-design/Origin%20X%20Landing.html" className="block h-dvh w-full border-0 bg-white" allow="clipboard-read; clipboard-write" />;
+  return null;
 }
