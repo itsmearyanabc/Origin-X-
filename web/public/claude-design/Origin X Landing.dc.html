@@ -1545,10 +1545,9 @@ class Component extends DCLogic {
 })();
 </script>
 
-<div id="metamask-fox-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; pointer-events: none;"></div>
-<script src="https://unpkg.com/@metamask/logo@3.3.0/dist/metamask-logo.js"></script>
+<script src="/metamask-fox.js"></script>
 <script>
-  window.addEventListener('load', () => {
+  (function initFox() {
     if (typeof ModelViewer !== 'undefined') {
       const viewer = ModelViewer({
         pxNotRatio: true,
@@ -1556,9 +1555,17 @@ class Component extends DCLogic {
         height: 120,
         followMouse: true
       });
-      document.getElementById('metamask-fox-container').appendChild(viewer.container);
+      if (viewer && viewer.container) {
+        viewer.container.style.position = 'fixed';
+        viewer.container.style.bottom = '20px';
+        viewer.container.style.right = '20px';
+        viewer.container.style.zIndex = '9999';
+        viewer.container.style.pointerEvents = 'none';
+      }
+    } else {
+      setTimeout(initFox, 100);
     }
-  });
+  })();
 </script>
 </body>
 

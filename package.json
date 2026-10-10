@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
+    "@metamask/logo": "^4.0.0",
     "@prisma/client": "^6.16.2",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
