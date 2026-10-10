@@ -38,8 +38,11 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "80:80"
-      - "443:443"
+      # Defaults support a standalone host. On a VPS with an existing host nginx,
+      # bind both ports to loopback (for example 127.0.0.1:8080 / :8443) and let
+      # the host's per-domain virtual host terminate public TLS.
+      - "${ORIGINX_HTTP_BIND:-80}:80"
+      - "${ORIGINX_HTTPS_BIND:-443}:443"
     volumes:
       # Cloudflare Origin Certificate + key (Cloudflare dashboard → SSL/TLS → Origin Server)
       - ./deploy/certs:/etc/nginx/certs:ro
