@@ -119,6 +119,18 @@ describe("authentication", () => {
     expect((await api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: fresh })).status).toBe(200);
   });
 
+  it("cannot exceed 5 guesses per code even with simultaneous requests", async () => {
+    const res = await api().post("/api/v1/auth/register").send({ email: `otp-race-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Otp Race" });
+    const code = res.body.data.demoEmailOtp as string;
+    const wrong = code === "000000" ? "111111" : "000000";
+    const auth = { Authorization: `Bearer ${res.body.data.accessToken}` };
+    const results = await Promise.all(Array.from({ length: 15 }, () => api().post("/api/v1/auth/verify-email/otp").set(auth).send({ code: wrong })));
+    expect(results.every((r) => r.status >= 400)).toBe(true);
+    const stored = await prisma.oneTimeToken.findFirstOrThrow({ where: { purpose: "EMAIL_OTP", user: { id: res.body.data.user.id } } });
+    expect(stored.attempts).toBe(5); // never more than 5 compared, however many arrive at once
+    expect(results.filter((r) => r.body.error?.code === "INVALID_CODE").length).toBeLessThanOrEqual(4);
+  });
+
   it("rejects expired verification codes", async () => {
     const res = await api().post("/api/v1/auth/register").send({ email: `otp-exp-${Date.now()}@test.originx`, password: PASSWORD, fullName: "Otp Expired" });
     await prisma.oneTimeToken.updateMany({ where: { purpose: "EMAIL_OTP", user: { id: res.body.data.user.id } }, data: { expiresAt: new Date(Date.now() - 1000) } });

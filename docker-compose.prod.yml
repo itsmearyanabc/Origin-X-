@@ -11,7 +11,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: "4000"
-      TRUST_PROXY: "1"          # exactly one proxy hop (nginx) in front of the API
+      # Proxy hops in front of the API. 1 = only the web container's nginx (standalone host).
+      # 2 = a host nginx in front of it (ORIGINX_HTTP_BIND on loopback); that nginx must set
+      # X-Forwarded-For, otherwise every visitor looks like one IP (shared rate limits).
+      TRUST_PROXY: "${ORIGINX_TRUST_PROXY:-1}"
       # Set to "true" only after this origin is restricted to Cloudflare IP ranges.
       # Until then, trust the direct nginx peer rather than a client-spoofable header.
       BEHIND_CLOUDFLARE: "false"

@@ -30,15 +30,18 @@ const RULES: Array<{ keywords: string[]; reply: string }> = [
     reply: "<p><b>Verified Custody:</b> Ownership only moves when the receiving company accepts it (e.g., Factory &rarr; Logistics &rarr; Distributor). Both sides sign the transfer.</p>",
   },
   {
-    keywords: ["what is", "about", "origin x", "origin-x", "do", "how"],
+    keywords: ["what is", "about origin", "about originx", "originx", "origin x", "origin-x", "how does it work", "what do you do", "how do i"],
     reply: "<p><b>Origin-X</b> is the verifiable identity layer for physical products.</p><p>It gives every physical product a verifiable digital identity (Digital Product Passports) to verify authenticity, inspect lifecycle evidence, detect suspicious identity activity, and manage inventory.</p>",
   },
 ];
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export class ChatService {
   reply(input: unknown): { reply: string } {
     const q = messageSchema.parse(input).message.toLowerCase();
-    const rule = RULES.find((r) => r.keywords.some((k) => q.includes(k)));
+    // Whole words/phrases only: "dog" must not match "do", "show" must not match "how".
+    const rule = RULES.find((r) => r.keywords.some((k) => new RegExp(`(^|[^a-z0-9])${escapeRegExp(k)}([^a-z0-9]|$)`).test(q)));
     return { reply: rule?.reply ?? OFF_TOPIC_REPLY };
   }
 }

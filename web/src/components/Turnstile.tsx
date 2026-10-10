@@ -60,6 +60,7 @@ export const Turnstile = forwardRef<TurnstileHandle, { action: string; onToken: 
   const tokenCb = useRef(onToken);
   tokenCb.current = onToken;
   const [failed, setFailed] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
     reset: () => {
@@ -78,9 +79,16 @@ export const Turnstile = forwardRef<TurnstileHandle, { action: string; onToken: 
           sitekey: siteKey,
           action,
           theme: "auto",
-          callback: (token: string) => tokenCb.current(token),
+          callback: (token: string) => {
+            setErrorCode(null);
+            tokenCb.current(token);
+          },
           "expired-callback": () => tokenCb.current(null),
-          "error-callback": () => tokenCb.current(null),
+          // Cloudflare retries on its own; surface the code so a misconfiguration is visible, not a silent spinner.
+          "error-callback": (code: string) => {
+            setErrorCode(String(code ?? "unknown"));
+            tokenCb.current(null);
+          },
         });
       })
       .catch(() => !cancelled && setFailed(true));
@@ -96,6 +104,7 @@ export const Turnstile = forwardRef<TurnstileHandle, { action: string; onToken: 
     <div className={className}>
       <div ref={container} className="flex min-h-[65px] justify-center" />
       {failed && <p className="mt-1 text-center text-xs text-bad-600">The security check couldn't load. Disable content blockers for this site and reload.</p>}
+      {errorCode && !failed && <p className="mt-1 text-center text-xs text-bad-600">Security check error ({errorCode}). Please reload the page; if it keeps happening, contact support.</p>}
     </div>
   );
 });

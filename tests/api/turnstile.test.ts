@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { config } from "../../src/config.js";
+import { publicIp } from "../../src/middleware/turnstile.js";
 import { api, PASSWORD, register } from "../helpers.js";
 
 // Only Cloudflare's Siteverify call is stubbed; routing, middleware and auth run for real.
@@ -65,6 +66,12 @@ describe("Cloudflare Turnstile human check", () => {
     const sent = new URLSearchParams(String((call[1] as RequestInit).body));
     expect(sent.get("secret")).toBe("0x4AAAAAAATESTSECRET");
     expect(sent.get("response")).toBe("good-token");
+  });
+
+  it("never sends a private proxy address to Cloudflare as the visitor IP", () => {
+    for (const ip of ["172.18.0.1", "::ffff:172.18.0.1", "10.0.0.5", "192.168.1.2", "127.0.0.1", "::1", "fd00::1", "100.64.0.1", "unknown", undefined]) expect(publicIp(ip), String(ip)).toBeUndefined();
+    expect(publicIp("203.0.113.7")).toBe("203.0.113.7");
+    expect(publicIp("::ffff:8.8.8.8")).toBe("8.8.8.8");
   });
 
   it("is a no-op when Turnstile is not configured", async () => {

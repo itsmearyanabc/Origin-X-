@@ -15,7 +15,7 @@ type AuthContextValue = {
   role: OrgRole | null;
   isAdmin: boolean;
   signIn: (email: string, password: string, turnstileToken?: string) => Promise<Me>;
-  signInWithGoogle: (credential: string) => Promise<Me | null>;
+  signInWithGoogle: (credential: string) => Promise<Me>;
   signUp: (fullName: string, email: string, password: string, turnstileToken?: string) => Promise<Me>;
   signOut: () => Promise<void>;
   reload: () => Promise<Me | null>;
@@ -92,11 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   
-  const signInWithGoogle = useCallback(async (credential: string) => {
-    const data = await api.post<AuthResult>("/auth/google", { credential });
-    session.setAccessToken(data.accessToken);
-    return await reload();
-  }, [reload]);
+  // Same path as password sign-in: a profile that fails to load is an error, not a silent null.
+  const signInWithGoogle = useCallback(
+    async (credential: string) => finishAuth(await api.post<AuthResult>("/auth/google", { credential }, false)),
+    [finishAuth],
+  );
 
   const signOut = useCallback(async () => {
     try {

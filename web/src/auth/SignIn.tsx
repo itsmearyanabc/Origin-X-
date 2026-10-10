@@ -28,6 +28,10 @@ export default function SignIn() {
   const { register, handleSubmit, formState } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
   const next = safeNext(params.get("next"));
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
+
   if (status === "authenticated" && me) return <Navigate to={next ?? homeFor(me)} replace />;
 
   
@@ -43,9 +47,6 @@ export default function SignIn() {
     }
   };
 
-  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
-  const [humanToken, setHumanToken] = useState<string | null>(null);
-  const humanCheck = useRef<TurnstileHandle>(null);
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setError(null);
     try {

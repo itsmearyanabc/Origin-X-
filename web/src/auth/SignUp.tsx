@@ -63,6 +63,10 @@ export default function SignUp() {
   const { register, handleSubmit, formState, watch } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { password: "" } });
   const next = safeNext(params.get("next"));
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
+
   if (status === "authenticated" && me && !formState.isSubmitting) return <Navigate to={next ?? homeFor(me)} replace />;
 
   
@@ -78,9 +82,6 @@ export default function SignUp() {
     }
   };
 
-  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
-  const [humanToken, setHumanToken] = useState<string | null>(null);
-  const humanCheck = useRef<TurnstileHandle>(null);
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     try {

@@ -213,11 +213,13 @@ export class AuthService {
     if (user.emailVerifiedAt) return { verified: true, alreadyVerified: true };
     const otp = await prisma.oneTimeToken.findFirst({ where: { userId, purpose: "EMAIL_OTP", usedAt: null }, orderBy: { createdAt: "desc" } });
     if (!otp || otp.expiresAt < new Date()) throw new AppError("CODE_EXPIRED", "This code has expired. Request a new one.", 400);
-    if (otp.attempts >= OTP_MAX_ATTEMPTS) throw new AppError("CODE_LOCKED", "Too many wrong attempts. Request a new code.", 429);
+    // Reserve one attempt atomically before comparing, so parallel guesses can't exceed the limit.
+    const reserved = await prisma.oneTimeToken.updateMany({ where: { id: otp.id, usedAt: null, attempts: { lt: OTP_MAX_ATTEMPTS } }, data: { attempts: { increment: 1 } } });
+    if (reserved.count !== 1) throw new AppError("CODE_LOCKED", "Too many wrong attempts. Request a new code.", 429);
     const expected = Buffer.from(otp.tokenHash.split(":").pop()!, "hex");
     const actual = Buffer.from(otpDigest(userId, code), "hex");
     if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-      const { attempts } = await prisma.oneTimeToken.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
+      const { attempts } = await prisma.oneTimeToken.findUniqueOrThrow({ where: { id: otp.id }, select: { attempts: true } });
       const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
       if (left === 0) await prisma.oneTimeToken.update({ where: { id: otp.id }, data: { usedAt: new Date() } });
       throw new AppError(left ? "INVALID_CODE" : "CODE_LOCKED", left ? `That code is not correct. ${left} attempt${left === 1 ? "" : "s"} left.` : "Too many wrong attempts. Request a new code.", left ? 400 : 429);
