@@ -31,6 +31,17 @@ Browser / QR scan ──HTTPS──> Cloudflare (DNS proxy, TLS, WAF, rate rule)
 3. Transactions are viewable at `https://amoy.polygonscan.com/tx/<hash>` (`BLOCKCHAIN_EXPLORER_TX_URL`).
    `BLOCKCHAIN_ANCHOR_POLICY=critical` anchors registration, QA, custody, delivery, recall and status events (the hash chain covers the events in between).
 
+### 2a. Alternative: self-hosted private chain (no faucet, no money)
+Runs the same `OriginXProofAnchor` contract on an Anvil node inside the Docker stack (`chain` service, profile `private-chain`). It is reachable only by the API (no published ports) and its state is saved to the `originx-chain-data` volume every 10 s and on shutdown, so proofs survive restarts and redeploys. Proofs are real contract transactions, but nobody outside the server can check them on an explorer — use Amoy when public verifiability matters.
+
+1. Project `.env` (Compose interpolation file, next to `docker-compose.prod.yml`): add `COMPOSE_PROFILES=private-chain`.
+2. `.env.production`: `BLOCKCHAIN_MODE=disabled`, `BLOCKCHAIN_PRIVATE_CHAIN=true`, `BLOCKCHAIN_NETWORK=originx-private`, `BLOCKCHAIN_CHAIN_ID=31337`, `BLOCKCHAIN_RPC_URL=http://chain:8545`, `BLOCKCHAIN_CONFIRMATIONS=1`, `BLOCKCHAIN_EXPLORER_TX_URL=` (empty), and a `0x`-prefixed `BLOCKCHAIN_PRIVATE_KEY`.
+3. Start the chain: `docker compose -f docker-compose.prod.yml up -d chain`.
+4. Deploy (funds the wallet with private-chain gas automatically; safe to re-run): `docker compose -f docker-compose.prod.yml run --rm api node dist/cli/deploy-contract.js`, then run the `sed` line it prints and `docker compose -f docker-compose.prod.yml up -d --force-recreate api`.
+5. Back up the volume occasionally: `docker run --rm -v originx_originx-chain-data:/d -v "$PWD":/b alpine cp /d/state.json /b/chain-state.backup.json`.
+
+The same `deploy-contract.js` CLI also deploys to Amoy (without `BLOCKCHAIN_PRIVATE_CHAIN`); there it requires test POL in the wallet. Moving from the private chain to Amoy later means a new contract address; proofs already anchored on the private chain are not migrated or relabelled.
+
 ## 2b. Email (SMTP)
 Password resets, email verification and team invitations are sent by email; the API refuses to start in production without SMTP.
 1. Pick a provider: Hostinger Mail (`smtp.hostinger.com`, port 465), Resend (`smtp.resend.com`, 465, user `resend`, password = API key), Brevo (`smtp-relay.brevo.com`, 587), or Amazon SES.

@@ -17,6 +17,10 @@ services:
       BEHIND_CLOUDFLARE: "false"
     expose:
       - "4000"
+    depends_on:
+      chain:
+        condition: service_healthy
+        required: false   # only when the private-chain profile is enabled
     read_only: true
     tmpfs:
       - /tmp
@@ -51,3 +55,41 @@ services:
     logging:
       driver: json-file
       options: { max-size: "20m", max-file: "5" }
+
+  chain:
+    # OPTIONAL self-hosted EVM chain for blockchain proofs without a public testnet or faucet.
+    # Enable with COMPOSE_PROFILES=private-chain (in the project .env). Reachable only by the API
+    # inside this Docker network — no ports are published. State is saved to a volume every
+    # 10 seconds and on shutdown, so anchored proofs survive restarts and redeploys.
+    # Proofs here are real smart-contract transactions, but not publicly verifiable (no explorer).
+    profiles: ["private-chain"]
+    image: ghcr.io/foundry-rs/foundry:v1.3.5
+    container_name: originx-chain
+    restart: unless-stopped
+    entrypoint: ["anvil"]
+    command:
+      - --host=0.0.0.0
+      - --port=8545
+      - --chain-id=31337
+      - --mnemonic-random          # dev accounts get unknown keys; ORIGINX uses its own wallet
+      - --state=/home/foundry/state.json   # load on start, save on stop
+      - --state-interval=10        # and save every 10 seconds
+    expose:
+      - "8545"
+    volumes:
+      # Mounted on the image's home dir so the volume inherits the anvil user's ownership
+      # (a fresh root-owned mount point would silently prevent saving the chain state).
+      - originx-chain-data:/home/foundry
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  originx-chain-data:

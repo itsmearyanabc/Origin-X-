@@ -57,6 +57,11 @@ export const config = {
     /** "evm" anchors proofs on an EVM chain. "disabled" records proofs as PENDING (never faked). */
     mode: (process.env.BLOCKCHAIN_MODE ?? "evm") as "evm" | "disabled",
     rpcUrl: process.env.BLOCKCHAIN_RPC_URL || local?.rpcUrl || "",
+    /**
+     * A self-hosted chain reachable only inside the Docker network (the optional `chain` service).
+     * Allows a plain-HTTP RPC to an internal service name; proofs are real on-chain but not public.
+     */
+    privateChain: bool("BLOCKCHAIN_PRIVATE_CHAIN", false),
     contractAddress: process.env.BLOCKCHAIN_CONTRACT_ADDRESS || local?.contractAddress || "",
     privateKey: process.env.BLOCKCHAIN_PRIVATE_KEY ?? "",
     network: process.env.BLOCKCHAIN_NETWORK || local?.network || "hardhat-local",
@@ -121,7 +126,14 @@ if (isProduction) {
     problems.push("BLOCKCHAIN_MODE must be either evm or disabled");
   }
   if (config.blockchain.mode === "evm") {
-    if (!/^https:\/\//i.test(config.blockchain.rpcUrl)) problems.push("BLOCKCHAIN_RPC_URL must be an HTTPS JSON-RPC endpoint for production anchoring");
+    if (config.blockchain.privateChain) {
+      // Plain HTTP is accepted only for an internal Docker service name (no dots), never a public host.
+      if (!/^http:\/\/[a-z0-9-]+:\d+\/?$/i.test(config.blockchain.rpcUrl)) {
+        problems.push("With BLOCKCHAIN_PRIVATE_CHAIN=true, BLOCKCHAIN_RPC_URL must be the internal chain service, e.g. http://chain:8545");
+      }
+    } else if (!/^https:\/\//i.test(config.blockchain.rpcUrl)) {
+      problems.push("BLOCKCHAIN_RPC_URL must be an HTTPS JSON-RPC endpoint for production anchoring");
+    }
     if (!/^0x[a-fA-F0-9]{40}$/.test(config.blockchain.contractAddress)) problems.push("BLOCKCHAIN_CONTRACT_ADDRESS must be a valid deployed EVM contract address");
     if (!Number.isSafeInteger(config.blockchain.expectedChainId) || (config.blockchain.expectedChainId ?? 0) < 1) {
       problems.push("BLOCKCHAIN_CHAIN_ID must explicitly pin the production network");
