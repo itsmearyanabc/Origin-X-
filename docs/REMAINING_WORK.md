@@ -6,9 +6,10 @@ Updated 2026-10-10 from the current repository state. This is a delivery queue, 
 
 The VPS already runs host Nginx on ports 80 and 443. The Origin X web container cannot publish those same ports; the observed result was a failed web container and public `/ready` returning 502. Keep the existing sites untouched and bind Origin X to loopback ports instead:
 
-```dotenv
-ORIGINX_HTTP_BIND=127.0.0.1:8080
-ORIGINX_HTTPS_BIND=127.0.0.1:8443
+Pass these Compose interpolation values inline (or put them in the project `.env`; `.env.production`'s service `env_file` is not used for Compose port interpolation):
+
+```bash
+ORIGINX_HTTP_BIND=127.0.0.1:8080 ORIGINX_HTTPS_BIND=127.0.0.1:8443 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 Then configure a dedicated host-Nginx server block for `originx.armedias.com` to proxy to `http://127.0.0.1:8080` (HTTP) or `https://127.0.0.1:8443` (if using the container's TLS listener). Since host Nginx already terminates TLS for other domains, the simplest setup is host TLS termination and proxying to the container's HTTP listener. Do not reload Nginx until `nginx -t` succeeds. Deploy/recreate the stack, then verify:
