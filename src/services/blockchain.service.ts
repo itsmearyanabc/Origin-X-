@@ -17,7 +17,7 @@ import { AppError, notFound } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
 import { CHAIN_IDENTITY_STATUS, type IdentityStatus } from "../lib/constants.js";
 import { fromBytes32, statusChangeDigest, toBytes32 } from "../lib/crypto.js";
-import type { BlockchainProof } from "@prisma/client";
+import type { BlockchainProof, Prisma } from "@prisma/client";
 
 const artifactPath = path.resolve(import.meta.dirname, "../../contracts/artifacts/OriginXProofAnchor.json");
 export const anchorArtifact = JSON.parse(fs.readFileSync(artifactPath, "utf8")) as { abi: unknown[]; bytecode: string };
@@ -282,8 +282,20 @@ export class BlockchainService {
     return run;
   }
 
-  private async submitNow(proof: BlockchainProof): Promise<BlockchainProof> {
-    if (proof.status !== "PENDING") return proof;
+  /**
+   * Updates a proof only while it is still PENDING. Another submitter (the background worker, a
+   * CLI, or a second API instance) may have confirmed it meanwhile; confirmed proofs are immutable
+   * at the database level, so we never touch them and simply return the current row.
+   */
+  private async updatePending(id: string, data: Prisma.BlockchainProofUpdateManyMutationInput): Promise<{ proof: BlockchainProof; applied: boolean }> {
+    const { count } = await prisma.blockchainProof.updateMany({ where: { id, status: "PENDING" }, data });
+    return { proof: await prisma.blockchainProof.findUniqueOrThrow({ where: { id } }), applied: count === 1 };
+  }
+
+  private async submitNow(queued: BlockchainProof): Promise<BlockchainProof> {
+    // Re-read: the caller's copy may be stale (e.g. the worker listed it before another submit ran).
+    const proof = await prisma.blockchainProof.findUnique({ where: { id: queued.id } });
+    if (!proof || proof.status !== "PENDING") return proof ?? queued;
     const conn = await this.connect();
     if (!conn) return proof; // stays PENDING; the worker retries later
 
@@ -301,10 +313,7 @@ export class BlockchainService {
         );
         if (!receipt) return proof; // still pending: leave its hash attached and check next cycle
         if (receipt.status !== 1) {
-          return prisma.blockchainProof.update({
-            where: { id: proof.id },
-            data: { transactionHash: null, attempts: proof.attempts + 1, lastError: "RPC_ERROR: Previously broadcast transaction reverted." },
-          });
+          return (await this.updatePending(proof.id, { transactionHash: null, attempts: proof.attempts + 1, lastError: "RPC_ERROR: Previously broadcast transaction reverted." })).proof;
         }
       } else {
         const identity = toBytes32(proof.identityHash ?? proof.eventHash);
@@ -319,28 +328,23 @@ export class BlockchainService {
         transactionHash = tx.hash;
         // Persist as soon as the signer returns the broadcast hash. A later timeout can now
         // recover by polling this transaction instead of issuing the operation a second time.
-        await prisma.blockchainProof.update({
-          where: { id: proof.id },
-          data: { transactionHash, chainId: conn.chainId, contractAddress: this.settings.contractAddress, network: this.settings.network },
-        });
+        await this.updatePending(proof.id, { transactionHash, chainId: conn.chainId, contractAddress: this.settings.contractAddress, network: this.settings.network });
         receipt = await withTimeout(tx.wait(this.settings.confirmations), this.settings.txTimeoutMs, "transaction confirmation");
       }
       if (!receipt || receipt.status !== 1) throw new Error("Transaction reverted");
 
-      const confirmed = await prisma.blockchainProof.update({
-        where: { id: proof.id },
-        data: {
-          status: "CONFIRMED",
-          network: this.settings.network,
-          chainId: conn.chainId,
-          contractAddress: this.settings.contractAddress,
-          transactionHash: transactionHash ?? receipt.hash,
-          blockNumber: receipt.blockNumber,
-          confirmedAt: new Date(),
-          attempts: proof.attempts + 1,
-          lastError: null,
-        },
+      const { proof: confirmed, applied } = await this.updatePending(proof.id, {
+        status: "CONFIRMED",
+        network: this.settings.network,
+        chainId: conn.chainId,
+        contractAddress: this.settings.contractAddress,
+        transactionHash: transactionHash ?? receipt.hash,
+        blockNumber: receipt.blockNumber,
+        confirmedAt: new Date(),
+        attempts: proof.attempts + 1,
+        lastError: null,
       });
+      if (!applied) return confirmed; // another submitter confirmed it first and ran the follow-ups
       if (confirmed.kind === "EVENT" && confirmed.eventId) {
         await prisma.productEvent.update({ where: { id: confirmed.eventId }, data: { verificationStatus: "ANCHORED" } });
       }
@@ -357,18 +361,20 @@ export class BlockchainService {
       if (name === "RPC_ERROR") this.reset();
       const attempts = proof.attempts + 1;
       const permanent = PERMANENT_ERRORS.has(name) || attempts >= MAX_ATTEMPTS;
-      return prisma.blockchainProof.update({
-        where: { id: proof.id },
-        data: { attempts, lastError: `${name}: ${message}`.slice(0, 500), status: permanent ? "FAILED" : "PENDING" },
-      });
+      return (await this.updatePending(proof.id, { attempts, lastError: `${name}: ${message}`.slice(0, 500), status: permanent ? "FAILED" : "PENDING" })).proof;
     }
   }
 
-  /** Anchor worker: retries PENDING proofs (identities first, since events reference them). */
-  async anchorPending(limit = 50) {
+  /**
+   * Anchor worker: retries PENDING proofs (identities first, since events reference them).
+   * `minIdleMs` skips proofs touched recently — another process may be waiting on their
+   * transaction right now; the background worker uses it so it never races an in-flight submit.
+   */
+  async anchorPending(limit = 50, opts: { minIdleMs?: number } = {}) {
     if (!(await this.connect())) return { processed: 0, confirmed: 0, available: false };
     const kindOrder = { IDENTITY: 0, EVENT: 1, STATUS: 2 } as Record<string, number>;
-    const pending = (await prisma.blockchainProof.findMany({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" }, take: limit })).sort(
+    const idleSince = opts.minIdleMs ? { updatedAt: { lt: new Date(Date.now() - opts.minIdleMs) } } : {};
+    const pending = (await prisma.blockchainProof.findMany({ where: { status: "PENDING", ...idleSince }, orderBy: { createdAt: "asc" }, take: limit })).sort(
       (a, b) => (kindOrder[a.kind] ?? 9) - (kindOrder[b.kind] ?? 9) || a.createdAt.getTime() - b.createdAt.getTime(),
     );
     let confirmed = 0;
@@ -531,7 +537,8 @@ let workerTimer: NodeJS.Timeout | null = null;
 export function startAnchorWorker() {
   if (workerTimer || !blockchainService.isConfigured()) return;
   workerTimer = setInterval(() => {
-    blockchainService.anchorPending().catch(() => undefined);
+    // Lease: leave proofs alone while a request/CLI may still be waiting on their transaction.
+    blockchainService.anchorPending(50, { minIdleMs: config.blockchain.txTimeoutMs + 30_000 }).catch(() => undefined);
   }, config.blockchain.retryIntervalMs);
   workerTimer.unref();
 }

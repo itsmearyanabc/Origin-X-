@@ -12,8 +12,10 @@
  * to the public verification engine at run time; nothing is backdated except the business dates of
  * the demo supply-chain story.
  *
- * Idempotent: if the showcase already exists it only prints the accounts and verification links.
- * Remove later by suspending the "(Demo)" organizations in the admin console.
+ * Idempotent and resumable: a completed showcase only prints the accounts and links; an interrupted
+ * run is resumed — every step looks for its result first, and stock/shipment/sale operations use
+ * fixed idempotency keys, so nothing is created twice. Re-running also resets every showcase
+ * account's password to SHOWCASE_PASSWORD. Remove later by suspending the "(Demo)" organizations.
  */
 import { randomBytes } from "node:crypto";
 import { config } from "../config.js";
@@ -74,11 +76,8 @@ async function printSummary() {
 }
 
 async function main() {
-  if (await prisma.organization.findUnique({ where: { slug: MARKER_SLUG } })) {
-    if (!(await prisma.platformSetting.findUnique({ where: { key: DONE_KEY } }))) {
-      console.error("A previous showcase run started but did not finish. Its partial \"(Demo)\" organizations remain; suspend them in the admin console. Nothing new was created.");
-      process.exit(1);
-    }
+  const resuming = Boolean(await prisma.organization.findUnique({ where: { slug: MARKER_SLUG } }));
+  if (resuming && (await prisma.platformSetting.findUnique({ where: { key: DONE_KEY } }))) {
     console.log("Showcase already present — nothing created.");
     return printSummary();
   }
@@ -86,66 +85,83 @@ async function main() {
     console.error("Set SHOWCASE_PASSWORD (at least 10 characters, letters and digits) — it becomes the password of every showcase account.");
     process.exit(1);
   }
-  // Pre-flight: fail before writing anything, so a run never stops half-way for a predictable reason.
-  const emails = [...ORGS.map((o) => o.email), ...EXTRA_USERS.map((u) => u.email)];
-  const takenEmails = await prisma.user.findMany({ where: { email: { in: emails } }, select: { email: true } });
-  const takenSlugs = await prisma.organization.findMany({ where: { slug: { in: ORGS.map((o) => o.slug) } }, select: { slug: true } });
-  if (takenEmails.length || takenSlugs.length) {
-    console.error(`Showcase accounts already exist (${[...takenEmails.map((u) => u.email), ...takenSlugs.map((o) => o.slug)].join(", ")}). Nothing was created.`);
-    process.exit(1);
-  }
+  const showcaseEmails = [...ORGS.map((o) => o.email), ...EXTRA_USERS.map((u) => u.email)];
   const chain = await blockchainService.status();
-  if (chain.available) {
-    for (const [code, serial] of IDENTITIES) {
-      if ((await blockchainService.lookupIdentity(canonicalIdentityHash(code, serial)))?.exists) {
-        console.error(`Identity ${code}/${serial} is already registered on ${chain.network} by an earlier run against this contract, so the showcase would be flagged as counterfeit. Use a fresh contract or database. Nothing was created.`);
-        process.exit(1);
+  if (!resuming) {
+    // Pre-flight for a fresh run: fail before writing anything for a predictable reason.
+    const takenEmails = await prisma.user.findMany({ where: { email: { in: showcaseEmails } }, select: { email: true } });
+    const takenSlugs = await prisma.organization.findMany({ where: { slug: { in: ORGS.map((o) => o.slug) } }, select: { slug: true } });
+    if (takenEmails.length || takenSlugs.length) {
+      console.error(`Showcase accounts already exist (${[...takenEmails.map((u) => u.email), ...takenSlugs.map((o) => o.slug)].join(", ")}). Nothing was created.`);
+      process.exit(1);
+    }
+    if (chain.available) {
+      for (const [code, serial] of IDENTITIES) {
+        if ((await blockchainService.lookupIdentity(canonicalIdentityHash(code, serial)))?.exists) {
+          console.error(`Identity ${code}/${serial} is already registered on ${chain.network} by an earlier run against this contract, so the showcase would be flagged as counterfeit. Use a fresh contract or database. Nothing was created.`);
+          process.exit(1);
+        }
       }
     }
   }
+  console.log(resuming ? "Resuming an unfinished showcase run — existing records are kept and only missing steps run." : "Creating the showcase.");
   console.log(chain.available ? `Blockchain: ${chain.network} (chain ${chain.chainId}) — proofs will be anchored for real.` : `Blockchain not active (${chain.reason}) — proofs stay PENDING and are anchored automatically once it is.`);
   const passwordHash = await hashPassword(password);
   const limits = { FREE: [100, 3], STARTER: [1000, 10], GROWTH: [10000, 50] } as const;
 
-  // --- Organizations, owners, members, partnerships -------------------------------------------
+  // --- Organizations, users, members, partnerships (find-or-create) ----------------------------
+  const ensureUser = (email: string, fullName: string) =>
+    prisma.user.upsert({ where: { email }, update: { passwordHash }, create: { email, fullName, passwordHash, emailVerifiedAt: new Date() } });
+  const ensureMember = async (organizationId: string, userId: string, role: OrgRole): Promise<Actor> => {
+    await prisma.organizationMember.upsert({ where: { organizationId_userId: { organizationId, userId } }, update: {}, create: { organizationId, userId, role } });
+    return { userId, organizationId, role, ipHash: null };
+  };
   const actors: Record<string, Actor> = {};
   for (const o of ORGS) {
     const unverified = "unverified" in o && o.unverified;
-    const org = await prisma.organization.create({
-      data: {
-        slug: o.slug, name: o.name, legalName: `${o.name.replace(" (Demo)", "")} — ORIGINX demo tenant`, organizationType: o.type, industry: o.industry, country: "IN",
-        address: o.city, contactEmail: o.email, status: "ACTIVE", verificationStatus: unverified ? "PENDING" : "VERIFIED", verifiedAt: unverified ? null : new Date(),
-        subscriptionPlan: o.plan, subscriptionStatus: "ACTIVE", subscriptionStartedAt: new Date(), productLimit: limits[o.plan][0], userLimit: limits[o.plan][1],
-      },
-    });
-    const user = await prisma.user.create({ data: { email: o.email, fullName: o.owner, passwordHash, emailVerifiedAt: new Date() } });
-    await prisma.organizationMember.create({ data: { organizationId: org.id, userId: user.id, role: "ORG_OWNER" } });
-    actors[o.slug] = { userId: user.id, organizationId: org.id, role: "ORG_OWNER", ipHash: null };
+    const org =
+      (await prisma.organization.findUnique({ where: { slug: o.slug } })) ??
+      (await prisma.organization.create({
+        data: {
+          slug: o.slug, name: o.name, legalName: `${o.name.replace(" (Demo)", "")} — ORIGINX demo tenant`, organizationType: o.type, industry: o.industry, country: "IN",
+          address: o.city, contactEmail: o.email, status: "ACTIVE", verificationStatus: unverified ? "PENDING" : "VERIFIED", verifiedAt: unverified ? null : new Date(),
+          subscriptionPlan: o.plan, subscriptionStatus: "ACTIVE", subscriptionStartedAt: new Date(), productLimit: limits[o.plan][0], userLimit: limits[o.plan][1],
+        },
+      }));
+    actors[o.slug] = await ensureMember(org.id, (await ensureUser(o.email, o.owner)).id, "ORG_OWNER");
   }
   const nova = actors["nova-pharma-demo"]!, swift = actors["swiftroute-logistics-demo"]!, metro = actors["metrostore-warehousing-demo"]!;
   const care = actors["careplus-pharmacy-demo"]!, volt = actors["voltwear-electronics-demo"]!, grey = actors["unknown-traders-demo"]!;
   const novaStaff: Record<string, Actor> = {};
-  for (const u of EXTRA_USERS) {
-    const user = await prisma.user.create({ data: { email: u.email, fullName: u.name, passwordHash, emailVerifiedAt: new Date() } });
-    await prisma.organizationMember.create({ data: { organizationId: nova.organizationId, userId: user.id, role: u.role } });
-    novaStaff[u.role] = { userId: user.id, organizationId: nova.organizationId, role: u.role, ipHash: null };
-  }
+  for (const u of EXTRA_USERS) novaStaff[u.role] = await ensureMember(nova.organizationId, (await ensureUser(u.email, u.name)).id, u.role);
   const manager = novaStaff.ORG_MANAGER!, operator = novaStaff.ORG_OPERATOR!;
-  for (const [s, t, type] of [[nova, swift, "LOGISTICS_PROVIDER"], [swift, metro, "WAREHOUSE"], [metro, care, "RETAILER"], [nova, care, "CUSTOMER"]] as const) {
-    await prisma.organizationRelationship.create({ data: { sourceOrganizationId: s.organizationId, targetOrganizationId: t.organizationId, relationshipType: type, status: "ACCEPTED", approvedAt: new Date() } });
+  for (const [src, tgt, relationshipType] of [[nova, swift, "LOGISTICS_PROVIDER"], [swift, metro, "WAREHOUSE"], [metro, care, "RETAILER"], [nova, care, "CUSTOMER"]] as const) {
+    const key = { sourceOrganizationId: src.organizationId, targetOrganizationId: tgt.organizationId, relationshipType };
+    await prisma.organizationRelationship.upsert({ where: { sourceOrganizationId_targetOrganizationId_relationshipType: key }, update: {}, create: { ...key, status: "ACCEPTED", approvedAt: new Date() } });
   }
   console.log("✓ 6 organizations, 8 users, 4 partnerships");
 
-  const event = (a: Actor, productId: string, eventType: EventType, location: string, at: Date, metadata: Record<string, unknown> = {}) =>
-    eventService.append({ organizationId: a.organizationId, actorUserId: a.userId, productId, eventType, location, metadata, occurredAt: at });
+  // --- Idempotent business helpers (all real services) -----------------------------------------
+  const ensureProduct = async (a: Actor, input: Record<string, unknown> & { productCode: string; serialNumber: string }, opts: { occurredAt?: Date } = {}) => {
+    const existing = await prisma.product.findFirst({ where: { organizationId: a.organizationId, productCode: input.productCode, serialNumber: input.serialNumber } });
+    if (existing) return { product: existing, collision: existing.status === "QUARANTINED" };
+    const created = await productService.create(a, input, opts);
+    return { product: created.product, collision: Boolean(created.collision) };
+  };
+  const event = async (a: Actor, productId: string, eventType: EventType, location: string, at: Date, metadata: Record<string, unknown> = {}) => {
+    if (await prisma.productEvent.findFirst({ where: { productId, eventType } })) return;
+    await eventService.append({ organizationId: a.organizationId, actorUserId: a.userId, productId, eventType, location, metadata, occurredAt: at });
+  };
   const handoff = async (from: Actor, to: Actor, productId: string, at: Date, location: string, receiptEventType?: "WAREHOUSE_RECEIVED" | "RETAILER_RECEIVED") => {
-    const transfer = await custodyService.request(from, { productId, toOrganizationId: to.organizationId });
+    const where = { productId, fromOrganizationId: from.organizationId, toOrganizationId: to.organizationId };
+    if (await prisma.custodyTransfer.findFirst({ where: { ...where, status: "TRANSFER_ACCEPTED" } })) return;
+    const transfer = (await prisma.custodyTransfer.findFirst({ where: { ...where, status: "TRANSFER_REQUESTED" } })) ?? (await custodyService.request(from, { productId, toOrganizationId: to.organizationId }));
     await custodyService.accept(to, transfer.id, { location, receiptEventType }, { occurredAt: at });
   };
   const vaccine = { productName: "NovaVax Influenza Vaccine 0.5 ml", category: "Vaccine", description: "Inactivated quadrivalent influenza vaccine, pre-filled syringe. Store at 2–8 °C.", originCountry: "IN", originLocation: "New Delhi, India" };
 
   // --- 1. Genuine product, full verified lifecycle (scan → HISTORY VERIFIED) ------------------
-  const genuine = (await productService.create(nova, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B21-000417", batchCode: "B21", manufacturingDate: iso(ago(12)), expiryDate: iso(ago(-360)), currentLocation: "Nova Pharma Plant 1, New Delhi" }, { occurredAt: ago(12) })).product;
+  const genuine = (await ensureProduct(nova, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B21-000417", batchCode: "B21", manufacturingDate: iso(ago(12)), expiryDate: iso(ago(-360)), currentLocation: "Nova Pharma Plant 1, New Delhi" }, { occurredAt: ago(12) })).product;
   await event(operator, genuine.id, "MANUFACTURED", "Nova Pharma Plant 1, New Delhi", ago(12, -2), { line: "Fill-finish line 3" });
   await event(manager, genuine.id, "QUALITY_APPROVED", "Nova Pharma QC Lab, New Delhi", ago(11), { certificate: "QC-B21-001" });
   await event(operator, genuine.id, "SHIPMENT_CREATED", "Nova Pharma Dispatch, New Delhi", ago(10), { carrier: "SwiftRoute Logistics", coldChain: true });
@@ -157,64 +173,81 @@ async function main() {
   console.log("✓ Genuine vaccine: full custody chain manufacturer → logistics → warehouse → pharmacy");
 
   // --- 2. Product in transit (custody handed to logistics, still moving) ----------------------
-  const transit = (await productService.create(nova, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B22-000088", batchCode: "B22", manufacturingDate: iso(ago(4)), expiryDate: iso(ago(-360)) }, { occurredAt: ago(4) })).product;
+  const transit = (await ensureProduct(nova, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B22-000088", batchCode: "B22", manufacturingDate: iso(ago(4)), expiryDate: iso(ago(-360)) }, { occurredAt: ago(4) })).product;
   await event(operator, transit.id, "MANUFACTURED", "Nova Pharma Plant 1, New Delhi", ago(4, -2));
   await event(manager, transit.id, "QUALITY_APPROVED", "Nova Pharma QC Lab, New Delhi", ago(3));
   await handoff(manager, swift, transit.id, ago(2), "SwiftRoute Delhi Hub");
   console.log("✓ In-transit vaccine with SwiftRoute Logistics");
 
   // --- 3. Recalled product (scan → RECALLED) ----------------------------------------------------
-  const recalled = (await productService.create(nova, { productCode: "NVX-GLU-PEN", serialNumber: "C7-004512", productName: "NovaGlu Insulin Pen 100 IU/ml", category: "Insulin", description: "Pre-filled insulin glargine pen.", batchCode: "C7", originCountry: "IN", originLocation: "Baddi, Himachal Pradesh", manufacturingDate: iso(ago(30)), expiryDate: iso(ago(-700)) }, { occurredAt: ago(30) })).product;
+  const recalled = (await ensureProduct(nova, { productCode: "NVX-GLU-PEN", serialNumber: "C7-004512", productName: "NovaGlu Insulin Pen 100 IU/ml", category: "Insulin", description: "Pre-filled insulin glargine pen.", batchCode: "C7", originCountry: "IN", originLocation: "Baddi, Himachal Pradesh", manufacturingDate: iso(ago(30)), expiryDate: iso(ago(-700)) }, { occurredAt: ago(30) })).product;
   await event(operator, recalled.id, "MANUFACTURED", "Nova Pharma Baddi Plant", ago(30, -3));
   await event(manager, recalled.id, "QUALITY_APPROVED", "Nova Pharma QC Lab, Baddi", ago(29));
   await handoff(manager, care, recalled.id, ago(25), "CarePlus Connaught Place", "RETAILER_RECEIVED");
-  await recallService.create(nova, { productId: recalled.id, reason: "Demo recall: potency below specification in stability testing of batch C7.", affectedUnits: 1, initiate: true });
+  if (!(await prisma.recall.findFirst({ where: { productId: recalled.id } }))) {
+    await recallService.create(nova, { productId: recalled.id, reason: "Demo recall: potency below specification in stability testing of batch C7.", affectedUnits: 1, initiate: true });
+  }
   console.log("✓ Recalled insulin pen (recall status anchored on-chain)");
 
   // --- 4. Counterfeit: an unverified seller registers the genuine vaccine's identity ----------
-  const fake = await productService.create(grey, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B21-000417", batchCode: "B21", originLocation: "Unverified" });
+  const fake = await ensureProduct(grey, { ...vaccine, productCode: "NVX-INF-05", serialNumber: "B21-000417", batchCode: "B21", originLocation: "Unverified" });
   console.log(`✓ Counterfeit attempt by Unknown Traders → ${fake.collision ? "identity collision detected, record quarantined" : "registered (no collision?)"}`);
 
   // --- 5. A second industry ---------------------------------------------------------------------
-  const earbuds = (await productService.create(volt, { productCode: "VW-AERO-X1", serialNumber: "AX1-7781-2201", productName: "VoltWear Aero X1 Wireless Earbuds", category: "Audio", batchCode: "AX1-L7", originCountry: "IN", originLocation: "Bengaluru, India", manufacturingDate: iso(ago(6)) }, { occurredAt: ago(6) })).product;
+  const earbuds = (await ensureProduct(volt, { productCode: "VW-AERO-X1", serialNumber: "AX1-7781-2201", productName: "VoltWear Aero X1 Wireless Earbuds", category: "Audio", batchCode: "AX1-L7", originCountry: "IN", originLocation: "Bengaluru, India", manufacturingDate: iso(ago(6)) }, { occurredAt: ago(6) })).product;
   await event(volt, earbuds.id, "MANUFACTURED", "VoltWear Factory, Bengaluru", ago(6, -3));
   await event(volt, earbuds.id, "QUALITY_APPROVED", "VoltWear QA, Bengaluru", ago(5));
   console.log("✓ Electronics product (second industry)");
 
   // --- 6. Inventory: warehouses on the map, SKUs, batch passports, stock, shipment, sales -------
-  const novaDc = (await warehouseService.create(nova, { code: "DEL-DC1", name: "Delhi Distribution Centre", city: "New Delhi", country: "IN", address: "Okhla Phase II", latitude: 28.5355, longitude: 77.2732 }))!;
-  const cold = (await warehouseService.addLocation(nova, novaDc.id, { code: "COLD-01", zone: "Cold room", aisle: "1", shelf: "A" }))!.id;
-  const novaPlant = (await warehouseService.create(nova, { code: "BAD-PLANT", name: "Baddi Plant Store", city: "Baddi", country: "IN", latitude: 30.9578, longitude: 76.7914 }))!;
-  const careStore = (await warehouseService.create(care, { code: "CP-STORE", name: "Connaught Place Store", city: "New Delhi", country: "IN", latitude: 28.6315, longitude: 77.2167 }))!;
-  await warehouseService.create(metro, { code: "GGN-DC", name: "Gurugram DC", city: "Gurugram", country: "IN", latitude: 28.4595, longitude: 77.0266 });
-  await warehouseService.create(swift, { code: "DEL-HUB", name: "Delhi Cross-dock Hub", city: "New Delhi", country: "IN", latitude: 28.5562, longitude: 77.1 });
-  const voltWh = (await warehouseService.create(volt, { code: "BLR-WH", name: "Bengaluru Warehouse", city: "Bengaluru", country: "IN", latitude: 12.9716, longitude: 77.5946 }))!;
+  const ensureWarehouse = async (a: Actor, input: { code: string } & Record<string, unknown>) =>
+    (await prisma.warehouse.findFirst({ where: { organizationId: a.organizationId, code: input.code }, include: { locations: true } })) ?? (await warehouseService.create(a, input))!;
+  const novaDc = await ensureWarehouse(nova, { code: "DEL-DC1", name: "Delhi Distribution Centre", city: "New Delhi", country: "IN", address: "Okhla Phase II", latitude: 28.5355, longitude: 77.2732 });
+  const cold = novaDc.locations.find((l) => l.code === "COLD-01")?.id ?? (await warehouseService.addLocation(nova, novaDc.id, { code: "COLD-01", zone: "Cold room", aisle: "1", shelf: "A" }))!.id;
+  const novaPlant = await ensureWarehouse(nova, { code: "BAD-PLANT", name: "Baddi Plant Store", city: "Baddi", country: "IN", latitude: 30.9578, longitude: 76.7914 });
+  const careStore = await ensureWarehouse(care, { code: "CP-STORE", name: "Connaught Place Store", city: "New Delhi", country: "IN", latitude: 28.6315, longitude: 77.2167 });
+  await ensureWarehouse(metro, { code: "GGN-DC", name: "Gurugram DC", city: "Gurugram", country: "IN", latitude: 28.4595, longitude: 77.0266 });
+  await ensureWarehouse(swift, { code: "DEL-HUB", name: "Delhi Cross-dock Hub", city: "New Delhi", country: "IN", latitude: 28.5562, longitude: 77.1 });
+  const voltWh = await ensureWarehouse(volt, { code: "BLR-WH", name: "Bengaluru Warehouse", city: "Bengaluru", country: "IN", latitude: 12.9716, longitude: 77.5946 });
   const mainOf = (w: { locations: Array<{ id: string; code: string }> }) => w.locations.find((l) => l.code === "MAIN")!.id;
 
-  const vaxSku = await catalogueService.createSku(nova, { sku: "NVX-05-DOSE", name: "NovaVax Influenza Vaccine 0.5 ml", unitOfMeasure: "DOSE", category: "Vaccine", brand: "NovaVax" });
-  const salineSku = await catalogueService.createSku(nova, { sku: "NS-500ML", name: "Normal Saline 0.9% 500 ml", unitOfMeasure: "L", category: "IV fluids", brand: "Nova Pharma" });
-  const audioSku = await catalogueService.createSku(volt, { sku: "AERO-X1", name: "VoltWear Aero X1 Earbuds", unitOfMeasure: "PCS", category: "Audio", brand: "VoltWear" });
+  const ensureSku = async (a: Actor, input: { sku: string } & Record<string, unknown>) =>
+    (await prisma.productSku.findUnique({ where: { organizationId_sku: { organizationId: a.organizationId, sku: input.sku } } })) ?? (await catalogueService.createSku(a, input));
+  const vaxSku = await ensureSku(nova, { sku: "NVX-05-DOSE", name: "NovaVax Influenza Vaccine 0.5 ml", unitOfMeasure: "DOSE", category: "Vaccine", brand: "NovaVax" });
+  const salineSku = await ensureSku(nova, { sku: "NS-500ML", name: "Normal Saline 0.9% 500 ml", unitOfMeasure: "L", category: "IV fluids", brand: "Nova Pharma" });
+  const audioSku = await ensureSku(volt, { sku: "AERO-X1", name: "VoltWear Aero X1 Earbuds", unitOfMeasure: "PCS", category: "Audio", brand: "VoltWear" });
   const mkBatch = async (a: Actor, skuId: string, code: string, made: Date, expiry: Date | null, planned: number) => {
-    const batch = await prisma.productBatch.create({ data: { organizationId: a.organizationId, batchCode: code, name: code, manufacturedAt: made, expiryDate: expiry } });
+    const existing = await prisma.productBatch.findFirst({ where: { organizationId: a.organizationId, batchCode: code } });
+    if (existing?.skuId) return existing;
+    const batch = existing ?? (await prisma.productBatch.create({ data: { organizationId: a.organizationId, batchCode: code, name: code, manufacturedAt: made, expiryDate: expiry } }));
     await catalogueService.updateBatch(a, batch.id, { skuId, plannedQuantity: planned, qualityStatus: "APPROVED" });
     return batch;
   };
   const b30 = await mkBatch(nova, vaxSku.id, "B30", ago(20), ago(-340), 5000);
-  await catalogueService.createBatchPassport(nova, b30.id, { originCountry: "IN", originLocation: "New Delhi, India" });
+  if (!(await prisma.productBatch.findUniqueOrThrow({ where: { id: b30.id } })).passportProductId) {
+    await catalogueService.createBatchPassport(nova, b30.id, { originCountry: "IN", originLocation: "New Delhi, India" });
+  }
   const b31 = await mkBatch(nova, vaxSku.id, "B31", ago(9), ago(-40), 2000);
   const s14 = await mkBatch(nova, salineSku.id, "S14", ago(40), ago(-700), 800);
   const x7 = await mkBatch(volt, audioSku.id, "AX1-L8", ago(15), null, 1500);
-  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: vaxSku.id, batchId: b30.id, locationId: cold, quantity: 5000 });
-  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: vaxSku.id, batchId: b31.id, locationId: cold, quantity: 2000 });
-  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: salineSku.id, batchId: s14.id, locationId: mainOf(novaPlant), quantity: "780.5" });
-  await inventoryService.recordMovement(volt, { type: "OPENING_BALANCE", skuId: audioSku.id, batchId: x7.id, locationId: mainOf(voltWh), quantity: 1450 });
-  await inventoryService.recordMovement(nova, { type: "DAMAGE", skuId: vaxSku.id, batchId: b30.id, locationId: cold, quantity: 12, reason: "Syringe plungers cracked during QC handling" });
-  const shipment = await shipmentService.create(nova, { receiverOrganizationId: care.organizationId, originWarehouseId: novaDc.id, items: [{ skuId: vaxSku.id, batchId: b30.id, fromLocationId: cold, quantity: 600 }], notes: "Cold chain 2–8 °C", transferCustody: false });
-  await shipmentService.reserve(nova, shipment.id);
-  await shipmentService.dispatch(nova, shipment.id);
-  await shipmentService.receive(care, shipment.id, { locationId: mainOf(careStore), items: [{ itemId: shipment.items![0]!.id, receivedQty: 580, damagedQty: 10, missingQty: 10 }] });
-  const pending = await shipmentService.create(nova, { receiverOrganizationId: care.organizationId, originWarehouseId: novaDc.id, items: [{ skuId: vaxSku.id, batchId: b31.id, fromLocationId: cold, quantity: 400 }] });
-  await shipmentService.reserve(nova, pending.id);
+  // Fixed idempotency keys: a replay returns the stored result instead of moving stock again.
+  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: vaxSku.id, batchId: b30.id, locationId: cold, quantity: 5000 }, "showcase-receipt-b30");
+  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: vaxSku.id, batchId: b31.id, locationId: cold, quantity: 2000 }, "showcase-receipt-b31");
+  await inventoryService.recordMovement(nova, { type: "RECEIPT", skuId: salineSku.id, batchId: s14.id, locationId: mainOf(novaPlant), quantity: "780.5" }, "showcase-receipt-s14");
+  await inventoryService.recordMovement(volt, { type: "OPENING_BALANCE", skuId: audioSku.id, batchId: x7.id, locationId: mainOf(voltWh), quantity: 1450 }, "showcase-opening-ax1");
+  await inventoryService.recordMovement(nova, { type: "DAMAGE", skuId: vaxSku.id, batchId: b30.id, locationId: cold, quantity: 12, reason: "Syringe plungers cracked during QC handling" }, "showcase-damage-b30");
+  const ensureShipment = async (tag: string, input: Record<string, unknown>) =>
+    (await prisma.shipment.findFirst({ where: { senderOrganizationId: nova.organizationId, notes: { startsWith: tag } }, include: { items: true } })) ??
+    (await shipmentService.create(nova, { ...input, notes: `${tag} ${String(input.notes ?? "")}`.trim() }));
+  const shipment = await ensureShipment("[Showcase S1]", { receiverOrganizationId: care.organizationId, originWarehouseId: novaDc.id, items: [{ skuId: vaxSku.id, batchId: b30.id, fromLocationId: cold, quantity: 600 }], notes: "Cold chain 2–8 °C", transferCustody: false });
+  const s1Status = async () => (await prisma.shipment.findUniqueOrThrow({ where: { id: shipment.id } })).status;
+  if ((await s1Status()) === "DRAFT") await shipmentService.reserve(nova, shipment.id, "showcase-s1-reserve");
+  if (["RESERVED", "READY_TO_DISPATCH"].includes(await s1Status())) await shipmentService.dispatch(nova, shipment.id, "showcase-s1-dispatch");
+  if ((await s1Status()) === "DISPATCHED") {
+    await shipmentService.receive(care, shipment.id, { locationId: mainOf(careStore), items: [{ itemId: shipment.items![0]!.id, receivedQty: 580, damagedQty: 10, missingQty: 10 }] }, "showcase-s1-receive");
+  }
+  const pending = await ensureShipment("[Showcase S2]", { receiverOrganizationId: care.organizationId, originWarehouseId: novaDc.id, items: [{ skuId: vaxSku.id, batchId: b31.id, fromLocationId: cold, quantity: 400 }] });
+  if ((await prisma.shipment.findUniqueOrThrow({ where: { id: pending.id } })).status === "DRAFT") await shipmentService.reserve(nova, pending.id, "showcase-s2-reserve");
   const sales = [["Walk-in customers, morning", 6, "1299.00"], ["City Clinic, Karol Bagh", 14, "1249.00"], ["South Delhi Health Centre", 9, "1350.00"], ["Walk-in customers, evening", 5, "1299.00"], ["Corporate vaccination drive", 40, "1199.00"]] as const;
   for (const [i, [customerName, quantity, unitPrice]] of sales.entries()) {
     await salesService.create(care, { reference: `SHOWCASE-${i + 1}`, customerName, currency: "INR", items: [{ skuId: vaxSku.id, batchId: b30.id, locationId: mainOf(careStore), quantity, unitPrice }] }, `showcase-careplus-sale-${i + 1}`);
@@ -224,14 +257,16 @@ async function main() {
   console.log("✓ 6 mapped warehouses, 3 SKUs, stock ledger, shipment with partial receipt, 5 recorded sales, low-stock alerts");
 
   // --- 7. Genuine public scans through the real verification engine (now, not backdated) -------
-  const scan = (token: string) => verificationService.verifyPublic(token, { ipHash: randomBytes(16).toString("hex"), userAgent: "ORIGINX showcase scan", source: "PUBLIC" });
-  for (let i = 0; i < 6; i++) await scan(genuine.publicVerificationToken);
-  for (let i = 0; i < 3; i++) await scan(recalled.publicVerificationToken);
-  for (let i = 0; i < 2; i++) await scan(fake.product.publicVerificationToken);
-  await scan(earbuds.publicVerificationToken);
-  await scan(transit.publicVerificationToken);
-  console.log("✓ 13 public verification scans recorded");
-  await prisma.platformSetting.create({ data: { key: DONE_KEY, valueJson: JSON.stringify(new Date().toISOString()) } });
+  if (!(await prisma.verificationLog.findFirst({ where: { productId: genuine.id, source: "PUBLIC" } }))) {
+    const scan = (token: string) => verificationService.verifyPublic(token, { ipHash: randomBytes(16).toString("hex"), userAgent: "ORIGINX showcase scan", source: "PUBLIC" });
+    for (let i = 0; i < 6; i++) await scan(genuine.publicVerificationToken);
+    for (let i = 0; i < 3; i++) await scan(recalled.publicVerificationToken);
+    for (let i = 0; i < 2; i++) await scan(fake.product.publicVerificationToken);
+    await scan(earbuds.publicVerificationToken);
+    await scan(transit.publicVerificationToken);
+    console.log("✓ 13 public verification scans recorded");
+  }
+  await prisma.platformSetting.upsert({ where: { key: DONE_KEY }, update: {}, create: { key: DONE_KEY, valueJson: JSON.stringify(new Date().toISOString()) } });
 
   await printSummary();
 }
