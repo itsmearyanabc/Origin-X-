@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-</head>
+<style>header nav a[data-route="/sign-in"], header nav a[data-route="/sign-up"] { display: flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; box-sizing: border-box !important; } header nav a[data-route="/sign-in"] { padding: 0 20px !important; border: 1.5px solid #E4E7EC !important; margin-top: 0 !important; } header nav a[data-route="/sign-up"] { padding: 0 20px !important; border: 1.5px solid transparent !important; margin-top: 0 !important; }</style></head>
 <body>
 <x-dc>
 <helmet>
@@ -40,9 +40,9 @@ a{color:#2864DC;text-decoration:none}a:hover{color:#F07824}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F07824" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"></path></svg>
             <span>Verify a product</span>
           </a>
-          <a href="#" data-route="/sign-in" style="padding:10px 18px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;color:#172033;font-weight:600;font-size:15px;" style-hover="border-color:#172033;color:#172033;">Sign in</a>
+          <a href="#" data-route="/sign-in" style="padding:10px 18px;border-radius:999px;border:1px solid #E4E7EC;background:#fff;color:#172033;font-weight:600;font-size:15px;" style-hover="border-color:#172033;color:#172033;">Sign-in</a>
           <a href="#" data-route="/sign-up" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;font-size:15px;transition:background .2s ease;" style-hover="background:#F48F45;color:#172033;" style-active="background:#D9661A;">
-            <span>Get started</span>
+            <span>Sign-up</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" data-arrow="1"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
           </a>
         </div>
@@ -107,8 +107,8 @@ a{color:#2864DC;text-decoration:none}a:hover{color:#F07824}
         <div data-mitem="1" style="display:grid;gap:10px;margin-top:20px;">
           <a href="Verify.dc.html" style="display:flex;justify-content:center;padding:14px;border-radius:999px;border:1px solid #E4E7EC;color:#172033;font-weight:700;">Verify a product</a>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <a href="#" data-route="/sign-in" style="display:flex;justify-content:center;padding:14px;border-radius:999px;border:1px solid #E4E7EC;color:#172033;font-weight:700;">Sign in</a>
-            <a href="#" data-route="/sign-up" style="display:flex;justify-content:center;padding:14px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;">Get started</a>
+            <a href="#" data-route="/sign-in" style="display:flex;justify-content:center;padding:14px;border-radius:999px;border:1px solid #E4E7EC;color:#172033;font-weight:700;">Sign-in</a>
+            <a href="#" data-route="/sign-up" style="display:flex;justify-content:center;padding:14px;border-radius:999px;background:#F07824;color:#172033;font-weight:700;">Sign-up</a>
           </div>
         </div>
       </div>
