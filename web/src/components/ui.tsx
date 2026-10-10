@@ -21,23 +21,13 @@ import { cn } from "@/lib/format";
 /* ---------------------------------------------------------------- Logo */
 
 export function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" className={cn("h-8 w-8", className)} aria-hidden>
-      <rect width="64" height="64" rx="16" fill="#F25C05" />
-      <circle cx="32" cy="32" r="15" fill="none" stroke="#fff" strokeWidth="6" />
-      <path d="M32 17v30M17 32h30" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".55" />
-      <circle cx="32" cy="32" r="5" fill="#fff" />
-    </svg>
-  );
+  return <img src="/brand/originx-mark.png" alt="" className={cn("h-8 w-8 object-contain", className)} aria-hidden />;
 }
 
 export function Logo({ className, to = "/", inverted }: { className?: string; to?: string; inverted?: boolean }) {
   return (
-    <Link to={to} className={cn("group inline-flex items-center gap-2.5", className)} aria-label="ORIGINX home">
-      <LogoMark className="transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:rotate-90" />
-      <span className={cn("font-display text-[1.15rem] font-extrabold tracking-tight", inverted ? "text-white" : "text-fg")}>
-        ORIGIN<span className="text-brand-500">X</span>
-      </span>
+    <Link to={to} className={cn("group inline-flex items-center", className)} aria-label="ORIGINX home">
+      <img src="/brand/originx-logo.png" alt="ORIGINX" className={cn("h-9 w-auto max-w-40 object-contain transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-[1.03]", inverted && "brightness-0 invert")} />
     </Link>
   );
 }
