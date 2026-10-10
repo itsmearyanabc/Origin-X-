@@ -1544,6 +1544,22 @@ class Component extends DCLogic {
   setTimeout(initLuxury, 250);
 })();
 </script>
+
+<div id="metamask-fox-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; pointer-events: none;"></div>
+<script src="https://unpkg.com/@metamask/logo@3.3.0/dist/metamask-logo.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    if (typeof ModelViewer !== 'undefined') {
+      const viewer = ModelViewer({
+        pxNotRatio: true,
+        width: 120,
+        height: 120,
+        followMouse: true
+      });
+      document.getElementById('metamask-fox-container').appendChild(viewer.container);
+    }
+  });
+</script>
 </body>
 
 </html>
