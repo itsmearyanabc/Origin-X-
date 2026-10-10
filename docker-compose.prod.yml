@@ -12,7 +12,9 @@ services:
       NODE_ENV: production
       PORT: "4000"
       TRUST_PROXY: "1"          # exactly one proxy hop (nginx) in front of the API
-      BEHIND_CLOUDFLARE: "true" # visitor IP comes from CF-Connecting-IP
+      # Set to "true" only after this origin is restricted to Cloudflare IP ranges.
+      # Until then, trust the direct nginx peer rather than a client-spoofable header.
+      BEHIND_CLOUDFLARE: "false"
     expose:
       - "4000"
     read_only: true
