@@ -5,6 +5,13 @@ import path from "node:path";
 const DEV_ACCESS_SECRET = "dev-access-secret-change-me-32chars";
 const DEV_REFRESH_SECRET = "dev-refresh-secret-change-me-32chars";
 
+export function trustProxySetting(raw: string): string | number | boolean {
+  const v = raw.trim();
+  if (/^\d+$/.test(v)) return Number(v);
+  if (v === "true" || v === "false") return v === "true";
+  return v;
+}
+
 function bool(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw === "") return fallback;
@@ -37,8 +44,11 @@ export const config = {
   /** Base URL that QR codes point at: the consumer verification page of the web app. */
   publicVerifyBaseUrl: process.env.PUBLIC_VERIFY_BASE_URL || `${process.env.APP_URL ?? "http://localhost:5173"}/verify`,
   corsOrigins: (process.env.CORS_ORIGINS ?? "*").split(",").map((s) => s.trim()),
-  /** Express "trust proxy" setting: e.g. "loopback" when nginx runs on the same VPS. */
-  trustProxy: process.env.TRUST_PROXY ?? "loopback",
+  /**
+   * Express "trust proxy" setting: e.g. "loopback" when nginx runs on the same VPS, or a hop count.
+   * Express reads a numeric *string* as an IP address (trusting nobody), so "2" becomes the number 2.
+   */
+  trustProxy: trustProxySetting(process.env.TRUST_PROXY ?? "loopback"),
   /**
    * When true, the client IP is read from Cloudflare's CF-Connecting-IP header. Only enable this
    * when the origin firewall accepts traffic exclusively from Cloudflare IP ranges, otherwise the
