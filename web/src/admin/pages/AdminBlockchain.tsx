@@ -14,6 +14,7 @@ export default function AdminBlockchain() {
   const chain = useAdminQuery(["chain"], () => api.get<ChainStatus>("/admin/blockchain/status", undefined, false), { refetchInterval: 30_000 });
   const proofs = useAdminQuery(["proofs", status, page], () => api.page<Proof & { product: { productCode: string } }>("/admin/blockchain/proofs", { status, page, pageSize: 25 }, false));
   const retry = useAdminMutation(() => api.post<{ processed: number; confirmed: number; available: boolean }>("/admin/blockchain/anchor-pending", {}, false), { success: (r) => (r.available ? `Anchored ${r.confirmed} of ${r.processed} pending proofs` : "Blockchain unavailable — nothing anchored") });
+  const retryFailed = useAdminMutation((id: string) => api.post(`/admin/blockchain/proofs/${id}/retry`, {}, false), { success: "Failed proof queued for retry" });
   const c = chain.data;
   return (
     <>
@@ -71,7 +72,7 @@ export default function AdminBlockchain() {
           <Skeleton className="m-5 h-48" />
         ) : proofs.data?.items.length ? (
           <>
-            <Table head={["Kind", "Product", "Anchored hash", "Transaction", "Block", "Status", "Created"]}>
+            <Table head={["Kind", "Product", "Anchored hash", "Transaction", "Block", "Status", "Created", "Recovery"]}>
               {proofs.data.items.map((p) => (
                 <tr key={p.id}>
                   <Td>
@@ -87,6 +88,23 @@ export default function AdminBlockchain() {
                     <StatusBadge value={p.status} />
                   </Td>
                   <Td className="text-muted">{formatDateTime(p.createdAt)}</Td>
+                  <Td>
+                    {p.status === "FAILED" && can("blockchain") ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={retryFailed.isPending}
+                        disabled={retryFailed.isPending}
+                        onClick={() => {
+                          if (window.confirm("Retry this failed proof on the configured chain? If its transaction was already broadcast, ORIGINX will resume that transaction.")) {
+                            retryFailed.mutate(p.id);
+                          }
+                        }}
+                      >
+                        Retry
+                      </Button>
+                    ) : "—"}
+                  </Td>
                 </tr>
               ))}
             </Table>

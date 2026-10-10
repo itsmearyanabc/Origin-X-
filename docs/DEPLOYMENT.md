@@ -59,6 +59,17 @@ docker compose -f docker-compose.prod.yml logs -f api      # look for "ORIGINX A
 docker compose -f docker-compose.prod.yml exec -e ADMIN_EMAIL=you@company.com -e ADMIN_PASSWORD='<long random>' api node dist/cli/create-admin.js
 ```
 
+### Existing host Nginx already owns ports 80/443
+
+Do not stop or replace host Nginx: it may be serving other domains. Add these Compose bind values to `.env.production` so the web container publishes only loopback ports:
+
+```dotenv
+ORIGINX_HTTP_BIND=127.0.0.1:8080
+ORIGINX_HTTPS_BIND=127.0.0.1:8443
+```
+
+Configure a separate host-Nginx virtual host for the Origin X hostname, retaining its existing certificate/TLS setup, with `proxy_pass http://127.0.0.1:8080;` and the usual forwarded headers (`Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`). Validate the new config with `nginx -t` before reloading. Do not reuse another site's `server_name` or remove its config. Recreate the app with `docker compose -f docker-compose.prod.yml up -d --build`, then check `curl -i http://127.0.0.1:8080/ready` and `curl -i https://<originx-hostname>/ready`; both should return 200. The HTTPS container listener is available on loopback port 8443 if a deployment specifically needs TLS between host Nginx and the container.
+
 ## 4. Cloudflare (free plan)
 1. Add the domain; DNS `A @ → <VPS IP>` (and `www` if wanted), **Proxied** (orange cloud). The web app and API share this origin (`https://your-domain.com`, API under `/api/v1`); set `APP_URL=https://your-domain.com` (QR codes point to `APP_URL/verify/<token>`) and `CORS_ORIGINS` to the same origin.
 2. SSL/TLS → **Full (strict)**; Edge Certificates → Always Use HTTPS, min TLS 1.2.

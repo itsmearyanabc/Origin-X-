@@ -11,8 +11,9 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { Contract, Interface, JsonRpcProvider, Network, Wallet, type ContractRunner, type ContractTransactionReceipt, type ContractTransactionResponse, type Signer } from "ethers";
+import { Contract, Interface, JsonRpcProvider, Network, Wallet, type ContractRunner, type ContractTransactionResponse, type Signer, type TransactionReceipt } from "ethers";
 import { config } from "../config.js";
+import { AppError, notFound } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
 import { CHAIN_IDENTITY_STATUS, type IdentityStatus } from "../lib/constants.js";
 import { fromBytes32, statusChangeDigest, toBytes32 } from "../lib/crypto.js";
@@ -287,16 +288,43 @@ export class BlockchainService {
     if (!conn) return proof; // stays PENDING; the worker retries later
 
     try {
-      const identity = toBytes32(proof.identityHash ?? proof.eventHash);
-      let tx: ContractTransactionResponse;
-      if (proof.kind === "IDENTITY") {
-        tx = await conn.contract.getFunction("registerProductIdentity")(identity);
-      } else if (proof.kind === "EVENT") {
-        tx = await conn.contract.getFunction("anchorEventProof")(toBytes32(proof.eventHash), identity);
+      let transactionHash = proof.transactionHash;
+      let receipt: TransactionReceipt | null;
+
+      if (transactionHash) {
+        // A prior attempt may have broadcast successfully and then timed out waiting for RPC
+        // confirmation. Resume that exact transaction; never blindly submit a duplicate.
+        receipt = await withTimeout(
+          conn.provider.waitForTransaction(transactionHash, this.settings.confirmations),
+          this.settings.txTimeoutMs,
+          "transaction confirmation",
+        );
+        if (!receipt) return proof; // still pending: leave its hash attached and check next cycle
+        if (receipt.status !== 1) {
+          return prisma.blockchainProof.update({
+            where: { id: proof.id },
+            data: { transactionHash: null, attempts: proof.attempts + 1, lastError: "RPC_ERROR: Previously broadcast transaction reverted." },
+          });
+        }
       } else {
-        tx = await conn.contract.getFunction("setIdentityStatus")(identity, proof.statusCode ?? 0);
+        const identity = toBytes32(proof.identityHash ?? proof.eventHash);
+        let tx: ContractTransactionResponse;
+        if (proof.kind === "IDENTITY") {
+          tx = await conn.contract.getFunction("registerProductIdentity")(identity);
+        } else if (proof.kind === "EVENT") {
+          tx = await conn.contract.getFunction("anchorEventProof")(toBytes32(proof.eventHash), identity);
+        } else {
+          tx = await conn.contract.getFunction("setIdentityStatus")(identity, proof.statusCode ?? 0);
+        }
+        transactionHash = tx.hash;
+        // Persist as soon as the signer returns the broadcast hash. A later timeout can now
+        // recover by polling this transaction instead of issuing the operation a second time.
+        await prisma.blockchainProof.update({
+          where: { id: proof.id },
+          data: { transactionHash, chainId: conn.chainId, contractAddress: this.settings.contractAddress, network: this.settings.network },
+        });
+        receipt = await withTimeout(tx.wait(this.settings.confirmations), this.settings.txTimeoutMs, "transaction confirmation");
       }
-      const receipt: ContractTransactionReceipt | null = await withTimeout(tx.wait(this.settings.confirmations), this.settings.txTimeoutMs, "transaction confirmation");
       if (!receipt || receipt.status !== 1) throw new Error("Transaction reverted");
 
       const confirmed = await prisma.blockchainProof.update({
@@ -306,7 +334,7 @@ export class BlockchainService {
           network: this.settings.network,
           chainId: conn.chainId,
           contractAddress: this.settings.contractAddress,
-          transactionHash: receipt.hash,
+          transactionHash: transactionHash ?? receipt.hash,
           blockNumber: receipt.blockNumber,
           confirmedAt: new Date(),
           attempts: proof.attempts + 1,
@@ -349,6 +377,20 @@ export class BlockchainService {
       if (result.status === "CONFIRMED") confirmed += 1;
     }
     return { processed: pending.length, confirmed, available: true };
+  }
+
+  /** Explicit operator retry for a proof exhausted by repeated transient failures. */
+  async retryFailedProof(proofId: string) {
+    const proof = await prisma.blockchainProof.findUnique({ where: { id: proofId } });
+    if (!proof) throw notFound("Blockchain proof");
+    if (proof.status !== "FAILED") throw new AppError("PROOF_NOT_FAILED", "Only failed proofs can be manually retried.", 409);
+    const queued = await prisma.blockchainProof.update({
+      where: { id: proofId },
+      data: { status: "PENDING", attempts: 0, lastError: null },
+    });
+    // The background worker handles it asynchronously; the admin request must not wait on RPC
+    // finality or create an HTTP timeout while a transaction is pending.
+    return queued;
   }
 
   // -------------------------------------------------------------------------
@@ -417,6 +459,9 @@ export class BlockchainService {
     if (proof.chainId && proof.chainId !== conn.chainId) {
       return { ...base, valid: null, result: "DIFFERENT_CHAIN" as const };
     }
+    if (proof.contractAddress && proof.contractAddress.toLowerCase() !== this.settings.contractAddress.toLowerCase()) {
+      return { ...base, valid: null, result: "DIFFERENT_CONTRACT" as const };
+    }
     try {
       const receipt = await withTimeout(conn.provider.getTransactionReceipt(proof.transactionHash), 5_000, "getTransactionReceipt");
       if (!receipt) {
@@ -427,7 +472,7 @@ export class BlockchainService {
         };
       }
       const target = (receipt.to ?? "").toLowerCase() === (proof.contractAddress ?? "").toLowerCase();
-      const logHashes = receipt.logs
+      const parsedLogs = receipt.logs
         .filter((log) => log.address.toLowerCase() === (proof.contractAddress ?? "").toLowerCase())
         .map((log) => {
           try {
@@ -436,10 +481,20 @@ export class BlockchainService {
             return null;
           }
         })
-        .filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed))
-        .map((parsed) => ({ name: parsed.name, hash: fromBytes32(String(parsed.args[0])) }));
-      const expectedHash = proof.kind === "EVENT" ? proof.eventHash : proof.identityHash ?? proof.eventHash;
-      const logMatches = logHashes.some((l) => l.hash === expectedHash);
+        .filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed));
+      const logMatches = parsedLogs.some((parsed) => {
+        if (proof.kind === "IDENTITY") {
+          return parsed.name === "IdentityRegistered" && fromBytes32(String(parsed.args.identityHash ?? parsed.args[0])) === proof.eventHash;
+        }
+        if (proof.kind === "EVENT") {
+          return parsed.name === "EventAnchored"
+            && fromBytes32(String(parsed.args.eventHash ?? parsed.args[0])) === proof.eventHash
+            && fromBytes32(String(parsed.args.identityHash ?? parsed.args[1])) === proof.identityHash;
+        }
+        return parsed.name === "IdentityStatusChanged"
+          && fromBytes32(String(parsed.args.identityHash ?? parsed.args[0])) === proof.identityHash
+          && Number(parsed.args.status ?? parsed.args[1]) === proof.statusCode;
+      });
       let stateMatches = true;
       if (proof.kind === "EVENT") {
         const onChain = await this.lookupEvent(proof.eventHash);

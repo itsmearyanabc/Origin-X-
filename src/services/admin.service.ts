@@ -28,7 +28,7 @@ export class AdminService {
 
   async dashboard() {
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [orgs, pendingOrgs, users, products, openIncidents, activeRecalls, proofs, pendingProofs, verifications24h, collisions, chain] = await Promise.all([
+    const [orgs, pendingOrgs, users, products, openIncidents, activeRecalls, proofs, pendingProofs, failedProofs, verifications24h, collisions, chain] = await Promise.all([
       prisma.organization.groupBy({ by: ["status"], _count: { _all: true } }),
       prisma.organization.count({ where: { status: "PENDING" } }),
       prisma.user.count(),
@@ -37,6 +37,7 @@ export class AdminService {
       prisma.recall.count({ where: { status: { in: ACTIVE_RECALL_STATUS } } }),
       prisma.blockchainProof.count({ where: { status: "CONFIRMED" } }),
       prisma.blockchainProof.count({ where: { status: "PENDING" } }),
+      prisma.blockchainProof.count({ where: { status: "FAILED" } }),
       prisma.verificationLog.count({ where: { timestamp: { gte: since24h } } }),
       prisma.incident.count({ where: { type: "IDENTITY_COLLISION" } }),
       blockchainService.status(),
@@ -49,7 +50,7 @@ export class AdminService {
       activeRecalls,
       identityCollisions: collisions,
       verificationsLast24h: verifications24h,
-      blockchain: { confirmedProofs: proofs, pendingProofs, network: chain },
+      blockchain: { confirmedProofs: proofs, pendingProofs, failedProofs, network: chain },
     };
   }
 
@@ -445,6 +446,12 @@ export class AdminService {
     const result = await blockchainService.anchorPending(200);
     await this.audit(a, "BLOCKCHAIN_ANCHOR_RETRY", "BlockchainProof", null, result);
     return result;
+  }
+
+  async retryFailedProof(a: AdminActor, proofId: string) {
+    const proof = await blockchainService.retryFailedProof(proofId);
+    await this.audit(a, "BLOCKCHAIN_PROOF_MANUAL_RETRY", "BlockchainProof", proof.id, { status: proof.status, attempts: proof.attempts });
+    return proof;
   }
 }
 

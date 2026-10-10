@@ -53,6 +53,9 @@ adminRouter.get("/blockchain/status", async (_req, res) => res.json(ok(await blo
 adminRouter.get("/blockchain/proofs", async (req, res) => res.json(list(await adminService.proofs(query(req)))));
 adminRouter.get("/blockchain/proofs/:id/verify", async (req, res) => res.json(ok(await blockchainService.verifyProof(param(req, "id")))));
 adminRouter.post("/blockchain/anchor-pending", requireAdmin("admin:blockchain"), async (req, res) => res.json(ok(await adminService.anchorPending(admin(req)))));
+adminRouter.post("/blockchain/proofs/:id/retry", requireAdmin("admin:blockchain"), async (req, res) => {
+  res.json(ok(await adminService.retryFailedProof(admin(req), param(req, "id"))));
+});
 
 // Logs
 adminRouter.get("/audit-logs", requireAdmin("admin:audit"), async (req, res) => res.json(list(await adminService.auditLogs(query(req)))));

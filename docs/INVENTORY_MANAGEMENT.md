@@ -193,7 +193,8 @@ npm run db:seed:sales-demo  # sample priced sales and warehouse coordinates (dev
 
 ## 11. Known limitations
 
-- **No orders, invoicing, pricing or valuation.** Shipments are created directly; this is a stock and custody layer, not an ERP.
+- **Sales are recorded, but this is not an invoicing/ERP system.** A completed sale snapshots customer/reference, currency, SKU, quantity and unit price, and dispatches stock. There is not yet a sale cancellation/refund workflow, invoice generation, tax/discount accounting or inventory valuation.
+- **No foreign-exchange conversion.** Sales totals are grouped by currency and must not be added across currencies.
 - **No barcode or RFID hardware integration**, by design. Stock is recorded by people or by API clients.
 - **Unit passports are not counted as stock automatically.** A unit passport and a SKU balance are linked by `skuId`, but receiving stock does not create unit passports. Quantity provenance is tracked at batch level through batch passports.
 - **"PENDING" quality allows dispatch.** Only REJECTED blocks dispatch. Tighten this if your QA process requires APPROVED before release.

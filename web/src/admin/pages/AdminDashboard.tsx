@@ -18,7 +18,7 @@ type Dashboard = {
   activeRecalls: number;
   identityCollisions: number;
   verificationsLast24h: number;
-  blockchain: { confirmedProofs: number; pendingProofs: number; network: ChainStatus };
+  blockchain: { confirmedProofs: number; pendingProofs: number; failedProofs: number; network: ChainStatus };
 };
 type Metrics = {
   verificationVolume30d: Array<{ day: string; total: number; failed: number }>;
@@ -92,6 +92,7 @@ export default function AdminDashboard() {
               ["Status", <StatusBadge key="s" value={chain.available ? "ACTIVE" : chain.configured ? "UNAVAILABLE" : "NOT_ANCHORED"} />],
               ["Confirmed proofs", number(d.blockchain.confirmedProofs)],
               ["Pending proofs", number(d.blockchain.pendingProofs)],
+              ["Failed proofs", number(d.blockchain.failedProofs)],
               ["On-chain identities", chain.onChainIdentityCount ?? "—"],
             ].map(([k, v]) => (
               <div key={k as string} className="flex justify-between gap-3">

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Contract, JsonRpcProvider } from "ethers";
 import { inject } from "vitest";
-import { anchorArtifact } from "../../src/services/blockchain.service.js";
+import { anchorArtifact, blockchainService } from "../../src/services/blockchain.service.js";
 import { addEvent, api, as, createOrg, createProduct, partner, prisma, register, tamperEventInDatabase, transfer, type Session } from "../helpers.js";
 
 const TX_HASH = /^0x[0-9a-f]{64}$/;
@@ -54,6 +54,58 @@ describe("product registration & blockchain identity", () => {
     const proof = await prisma.blockchainProof.findFirstOrThrow({ where: { productId: product.id, kind: "EVENT" } });
     const res = await api().get(`/api/v1/products/${product.id}/blockchain/proofs/${proof.id}/verify`).set(as(maker, makerOrg));
     expect(res.body.data).toMatchObject({ valid: true, result: "VERIFIED", logMatches: true, stateMatches: true, targetsContract: true });
+  });
+
+  it("deep-verifies status proofs against the exact status emitted by the contract", async () => {
+    const { product } = await createProduct(maker, makerOrg);
+    const identity = await prisma.productIdentity.findUniqueOrThrow({ where: { productId: product.id } });
+    const proof = await blockchainService.anchorIdentityStatus(product.id, identity.identityHash, "RECALLED");
+    expect(proof.status).toBe("CONFIRMED");
+
+    const verified = await blockchainService.verifyProof(proof.id);
+    expect(verified).toMatchObject({ valid: true, result: "VERIFIED", logMatches: true, stateMatches: true, targetsContract: true });
+
+    // Simulate exhaustion after broadcast: an admin retry must preserve and resume the same tx.
+    const resumed = await prisma.blockchainProof.create({ data: {
+      productId: proof.productId,
+      kind: proof.kind,
+      network: proof.network,
+      chainId: proof.chainId,
+      contractAddress: proof.contractAddress,
+      transactionHash: proof.transactionHash,
+      blockNumber: proof.blockNumber,
+      eventHash: proof.eventHash,
+      identityHash: proof.identityHash,
+      statusCode: proof.statusCode,
+      timestamp: proof.timestamp,
+      status: "FAILED",
+      attempts: 10,
+      lastError: "RPC_ERROR: confirmation timed out",
+    } });
+    const queued = await blockchainService.retryFailedProof(resumed.id);
+    expect(queued).toMatchObject({ status: "PENDING", attempts: 0, transactionHash: proof.transactionHash, lastError: null });
+    await blockchainService.anchorPending();
+    const resumedProof = await prisma.blockchainProof.findUniqueOrThrow({ where: { id: resumed.id } });
+    expect(resumedProof).toMatchObject({ status: "CONFIRMED", transactionHash: proof.transactionHash });
+
+    // Simulate a corrupted DB projection that claims the same successful tx recorded ACTIVE.
+    const corrupted = await prisma.blockchainProof.create({ data: {
+      productId: proof.productId,
+      kind: proof.kind,
+      network: proof.network,
+      chainId: proof.chainId,
+      contractAddress: proof.contractAddress,
+      transactionHash: proof.transactionHash,
+      blockNumber: proof.blockNumber,
+      eventHash: proof.eventHash,
+      identityHash: proof.identityHash,
+      statusCode: 1,
+      timestamp: proof.timestamp,
+      confirmedAt: proof.confirmedAt,
+      status: "CONFIRMED",
+    } });
+    const rejected = await blockchainService.verifyProof(corrupted.id);
+    expect(rejected).toMatchObject({ valid: false, result: "MISMATCH", logMatches: false });
   });
 });
 

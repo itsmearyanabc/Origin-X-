@@ -117,5 +117,28 @@ if (isProduction) {
   if (config.blockchain.mode === "evm" && !config.blockchain.privateKey) {
     problems.push("BLOCKCHAIN_PRIVATE_KEY must be set for production anchoring (or set BLOCKCHAIN_MODE=disabled)");
   }
+  if (!(config.blockchain.mode === "evm" || config.blockchain.mode === "disabled")) {
+    problems.push("BLOCKCHAIN_MODE must be either evm or disabled");
+  }
+  if (config.blockchain.mode === "evm") {
+    if (!/^https:\/\//i.test(config.blockchain.rpcUrl)) problems.push("BLOCKCHAIN_RPC_URL must be an HTTPS JSON-RPC endpoint for production anchoring");
+    if (!/^0x[a-fA-F0-9]{40}$/.test(config.blockchain.contractAddress)) problems.push("BLOCKCHAIN_CONTRACT_ADDRESS must be a valid deployed EVM contract address");
+    if (!Number.isSafeInteger(config.blockchain.expectedChainId) || (config.blockchain.expectedChainId ?? 0) < 1) {
+      problems.push("BLOCKCHAIN_CHAIN_ID must explicitly pin the production network");
+    }
+    if (!/^0x[a-fA-F0-9]{64}$/.test(config.blockchain.privateKey)) problems.push("BLOCKCHAIN_PRIVATE_KEY must be a 32-byte hex private key");
+    if (!Number.isInteger(config.blockchain.confirmations) || config.blockchain.confirmations < 1) {
+      problems.push("BLOCKCHAIN_CONFIRMATIONS must be a positive integer in production");
+    }
+    if (!Number.isInteger(config.blockchain.txTimeoutMs) || config.blockchain.txTimeoutMs < 1_000) {
+      problems.push("BLOCKCHAIN_TX_TIMEOUT_MS must be at least 1000 in production");
+    }
+    if (!Number.isInteger(config.blockchain.retryIntervalMs) || config.blockchain.retryIntervalMs < 1_000) {
+      problems.push("BLOCKCHAIN_RETRY_INTERVAL_MS must be at least 1000 in production");
+    }
+    if (!(config.blockchain.anchorPolicy === "all" || config.blockchain.anchorPolicy === "critical")) {
+      problems.push("BLOCKCHAIN_ANCHOR_POLICY must be all or critical");
+    }
+  }
   if (problems.length) throw new Error(`Unsafe production configuration:\n- ${problems.join("\n- ")}`);
 }

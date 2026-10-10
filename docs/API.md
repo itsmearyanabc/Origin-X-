@@ -129,6 +129,7 @@ Example (abridged):
 | GET | `/audit-logs` | admin:audit |
 | GET | `/blockchain/status`, `/blockchain/proofs`, `/blockchain/proofs/:id/verify` | admin:read |
 | POST | `/blockchain/anchor-pending` | admin:blockchain |
+| POST | `/blockchain/proofs/:id/retry` | admin:blockchain (FAILED proof only; audited) |
 | GET / PUT | `/settings`, `/settings/:key` | admin:read / admin:settings |
 | GET / PATCH | `/contact-messages`, `/contact-messages/:id` | admin:read / admin:orgs:manage `{status}` |
 | GET | `/inventory/overview` | admin:read — cross-tenant stock, shipment and discrepancy totals (read-only) |

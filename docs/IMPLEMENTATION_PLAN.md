@@ -143,9 +143,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md): Cloudflare (DNS, proxy, TLS Full-strict, WAF
 10. Production image, compose, nginx, env templates; production smoke test.
 11. Documentation.
 
-### Known gaps / next steps
-- Email delivery provider (tokens are currently returned only in DEMO_MODE).
-- Redis-backed rate limiting/enumeration counters for multi-instance deployments.
-- Payment provider for subscriptions (entitlements already enforced via `ENFORCE_ENTITLEMENTS`).
-- Optional Merkle batching of anchors to cut gas on mainnet.
-- Frontend panels (APIs are ready).
+### Remaining work (prioritized)
+
+The organization inventory UI, sales monitor, warehouse map, admin network map, and local demo-data seed are implemented. Track what remains in [REMAINING_WORK.md](REMAINING_WORK.md). The current production release is blocked at deployment validation: the Hostinger VPS already has host Nginx bound to ports 80/443, so the web container must bind to loopback ports and host Nginx must proxy the Origin X virtual host to it.
+
+Product follow-ups after deployment are refunds/returns against recorded sales and invoice/tax/discount support. These affect accounting semantics and should be specified before implementation; the current sales record represents a completed, priced stock dispatch and does not claim to be a full ERP order/invoice system.
+
+Operational follow-ups: configure and verify SMTP in production; move rate-limit and enumeration counters to Redis before horizontal scaling; integrate a payment provider before charging for subscriptions. Optional later work: Merkle batching of blockchain anchors to reduce mainnet gas.
