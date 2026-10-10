@@ -58,8 +58,9 @@ export default function AuthLayout() {
 
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div aria-hidden className="absolute inset-0 opacity-20 [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:24px_24px]" />
-        <div aria-hidden className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-white/20 blur-3xl" />
-        <div aria-hidden className="absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-amber-300/30 blur-3xl" />
+        <motion.div animate={{ x: [0, 40, -20, 0], y: [0, -50, 20, 0] }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} aria-hidden className="absolute -right-32 -top-32 h-[30rem] w-[30rem] rounded-full bg-white/20 blur-3xl" />
+        <motion.div animate={{ x: [0, -40, 30, 0], y: [0, 60, -40, 0] }} transition={{ duration: 18, repeat: Infinity, ease: "linear" }} aria-hidden className="absolute -bottom-40 -left-20 h-[30rem] w-[30rem] rounded-full bg-amber-300/30 blur-3xl" />
+        <motion.div animate={{ x: [0, 30, -50, 0], y: [0, -30, 50, 0], scale: [1, 1.2, 1] }} transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }} aria-hidden className="absolute left-1/4 top-1/3 h-[25rem] w-[25rem] rounded-full bg-orange-400/20 blur-3xl" />
 
         <div className="relative">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">ORIGINX</p>
