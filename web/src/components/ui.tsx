@@ -42,7 +42,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const buttonBase =
-  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-200 ease-[var(--ease-out-expo)] disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]";
+  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-200 ease-[var(--ease-out-expo)] disabled:pointer-events-none disabled:opacity-50 group hover:scale-[1.02] active:scale-[0.98]";
 const buttonVariants = {
   primary: "bg-brand-500 text-white shadow-[0_8px_20px_-8px_rgb(242_92_5/0.65)] hover:bg-brand-600 hover:shadow-[0_12px_28px_-10px_rgb(242_92_5/0.75)]",
   secondary: "border border-line bg-surface text-fg shadow-soft hover:border-ink-300 hover:bg-surface-2",

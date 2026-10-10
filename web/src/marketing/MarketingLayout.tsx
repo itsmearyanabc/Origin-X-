@@ -74,7 +74,7 @@ function Navbar() {
             </Link>
             {status === "authenticated" ? (
               <Link to={homeFor(me)} className={buttonClass("primary", "md")}>
-                Open dashboard <ArrowRight className="h-4 w-4" />
+                Open dashboard <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             ) : (
               <>
@@ -82,7 +82,7 @@ function Navbar() {
                   Sign-in
                 </Link>
                 <Link to="/sign-up" className={buttonClass("primary", "md")}>
-                  Sign-up <ArrowRight className="h-4 w-4" />
+                  Sign-up <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </>
             )}

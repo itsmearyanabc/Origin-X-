@@ -4,7 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-<style>header nav a[data-route="/sign-in"], header nav a[data-route="/sign-up"] { display: flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; box-sizing: border-box !important; } header nav a[data-route="/sign-in"] { padding: 0 20px !important; border: 1.5px solid #E4E7EC !important; margin-top: 0 !important; } header nav a[data-route="/sign-up"] { padding: 0 20px !important; border: 1.5px solid transparent !important; margin-top: 0 !important; }</style></head>
+<style>header nav a[data-route="/sign-in"], header nav a[data-route="/sign-up"] { display: flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; box-sizing: border-box !important; } header nav a[data-route="/sign-in"] { padding: 0 20px !important; border: 1.5px solid #E4E7EC !important; margin-top: 0 !important; } header nav a[data-route="/sign-up"] { padding: 0 20px !important; border: 1.5px solid transparent !important; margin-top: 0 !important; }</style><style>
+/* Micro-interactions: Scale, Glow, Arrow slide */
+a[data-route], a[href="Verify.dc.html"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+  will-change: transform;
+}
+a[data-route]:hover, a[href="Verify.dc.html"]:hover {
+  transform: translateY(-1px) scale(1.02) !important;
+}
+a[data-route]:active, a[href="Verify.dc.html"]:active {
+  transform: scale(0.98) !important;
+}
+a[data-route] svg[data-arrow="1"], a[href="Verify.dc.html"] svg[data-arrow="1"] {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform;
+}
+a[data-route]:hover svg[data-arrow="1"], a[href="Verify.dc.html"]:hover svg[data-arrow="1"] {
+  transform: translateX(4px) !important;
+}
+a[data-route="/sign-up"] {
+  box-shadow: 0 4px 12px rgba(240, 120, 36, 0) !important;
+}
+a[data-route="/sign-up"]:hover {
+  box-shadow: 0 8px 24px -6px rgba(240, 120, 36, 0.6) !important;
+}
+/* Adjust glow for dark hero buttons */
+section[data-screen-label="Hero"] a[data-route="/sign-up"]:hover {
+  box-shadow: 0 8px 24px -6px rgba(23, 32, 51, 0.5) !important;
+}
+</style></head>
 <body>
 <x-dc>
 <helmet>
