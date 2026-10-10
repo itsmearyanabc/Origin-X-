@@ -13,9 +13,12 @@ const warehouseSchema = z.object({
   address: z.string().trim().max(300).optional(),
   city: z.string().trim().max(120).optional(),
   country: z.string().trim().max(60).optional(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
+  // Optional (older API clients omit them), but always provided as a pair.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
+const bothOrNeither = (v: { latitude?: number | null; longitude?: number | null }) => (v.latitude == null) === (v.longitude == null);
+const pairMessage = { message: "Latitude and longitude must be provided together.", path: ["longitude"] };
 const locationSchema = z.object({
   code,
   zone: z.string().trim().max(40).optional(),
@@ -47,7 +50,7 @@ export class WarehouseService {
 
   /** Every warehouse gets a default "MAIN" location so stock always has a place. */
   async create(a: Actor, input: unknown) {
-    const data = warehouseSchema.parse(input);
+    const data = warehouseSchema.refine(bothOrNeither, pairMessage).parse(input);
     try {
       const warehouse = await prisma.warehouse.create({
         data: { ...data, organizationId: a.organizationId, locations: { create: { code: "MAIN", organizationId: a.organizationId } } },
@@ -72,7 +75,7 @@ export class WarehouseService {
   }
 
   async update(a: Actor, id: string, input: unknown) {
-    const patch = warehouseSchema.omit({ code: true }).extend({ status: z.enum(["ACTIVE", "INACTIVE"]) }).partial().refine((value) => !((value.latitude == null) !== (value.longitude == null)), { message: "Latitude and longitude must be updated together.", path: ["longitude"] }).parse(input);
+    const patch = warehouseSchema.omit({ code: true }).extend({ status: z.enum(["ACTIVE", "INACTIVE"]) }).partial().refine(bothOrNeither, pairMessage).parse(input);
     const warehouse = await prisma.warehouse.findFirst({ where: { id, organizationId: a.organizationId } });
     if (!warehouse) throw notFound("Warehouse");
     if (patch.status === "INACTIVE") {
