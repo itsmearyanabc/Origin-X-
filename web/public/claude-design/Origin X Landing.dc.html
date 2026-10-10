@@ -33,7 +33,54 @@ a[data-route="/sign-up"]:hover {
 section[data-screen-label="Hero"] a[data-route="/sign-up"]:hover {
   box-shadow: 0 8px 24px -6px rgba(23, 32, 51, 0.5) !important;
 }
-</style></head>
+</style>
+<style>
+/* Ambient Floating Backgrounds */
+.ambient-blobs {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 100vh;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  animation: float-blob 12s infinite ease-in-out alternate;
+  will-change: transform;
+}
+.ambient-blob-1 {
+  width: 40vw; height: 40vw;
+  background: #F07824;
+  top: -10vw; left: -10vw;
+}
+.ambient-blob-2 {
+  width: 35vw; height: 35vw;
+  background: #2864DC;
+  top: 10vw; right: -5vw;
+  animation-delay: -6s;
+}
+@keyframes float-blob {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, 60px) scale(1.1); }
+}
+
+/* Hero Sequences */
+[data-hero] {
+  opacity: 0;
+  transform: translateY(25px);
+  will-change: opacity, transform;
+}
+.hero-revealed {
+  animation: heroUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes heroUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
 <body>
 <x-dc>
 <helmet>
@@ -1274,6 +1321,63 @@ class Component extends DCLogic {
   };
   
   setTimeout(init, 50);
+})();
+</script>
+
+<script>
+(function() {
+  const initAdvanced = () => {
+    // 1. Cyberpunk Hash Scramble
+    const scrambleObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const originalText = el.getAttribute('data-orig-hash') || el.textContent;
+          el.setAttribute('data-orig-hash', originalText);
+          const chars = "0123456789ABCDEF";
+          let iterations = 0;
+          const interval = setInterval(() => {
+            el.textContent = originalText.split('').map(c => {
+              if (c === ' ' || c === '…' || c === '→') return c;
+              return chars[Math.floor(Math.random() * chars.length)];
+            }).join('');
+            iterations++;
+            if (iterations > 12) {
+              clearInterval(interval);
+              el.textContent = originalText;
+            }
+          }, 45);
+          scrambleObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('span, div').forEach(el => {
+      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+        if (el.textContent.match(/^[A-F0-9]{4,10}…[A-F0-9]{4,10}$/i)) {
+          scrambleObserver.observe(el);
+        }
+      }
+    });
+
+    // 2. Hero Sequencer
+    document.querySelectorAll('[data-hero]').forEach(el => {
+      const index = parseInt(el.getAttribute('data-hero'), 10) || 0;
+      el.style.animationDelay = `${index * 0.15}s`;
+      el.classList.add('hero-revealed');
+    });
+
+    // 3. Inject ambient blobs if not already there
+    if (!document.querySelector('.ambient-blobs')) {
+      const blobs = document.createElement('div');
+      blobs.className = 'ambient-blobs';
+      blobs.innerHTML = '<div class="ambient-blob ambient-blob-1"></div><div class="ambient-blob ambient-blob-2"></div>';
+      const main = document.querySelector('main') || document.body;
+      main.insertBefore(blobs, main.firstChild);
+    }
+  };
+
+  setTimeout(initAdvanced, 150);
 })();
 </script>
 </body>
