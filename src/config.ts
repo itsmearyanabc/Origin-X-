@@ -78,6 +78,11 @@ export const config = {
     cloneScanThreshold: Number(process.env.CLONE_SCAN_THRESHOLD ?? 25),
     unknownTokenLimitPer10Min: Number(process.env.UNKNOWN_TOKEN_LIMIT ?? 20),
   },
+  /** Cloudflare Turnstile human check (public forms). Both empty = disabled. */
+  turnstile: {
+    siteKey: process.env.TURNSTILE_SITE_KEY ?? "",
+    secretKey: process.env.TURNSTILE_SECRET_KEY ?? "",
+  },
   /** Google Identity Services OAuth client ID (public; must match the web app's client ID). */
   googleClientId: process.env.GOOGLE_CLIENT_ID || "402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com",
   /** Outgoing email over SMTP (password reset, email verification, invitations). */
@@ -98,7 +103,7 @@ export const config = {
   ai: {
     provider: process.env.AI_PROVIDER ?? "",
     apiKey: process.env.AI_API_KEY ?? "",
-    model: process.env.AI_MODEL ?? "claude-sonnet-5-5",
+    model: process.env.AI_MODEL || "claude-opus-5-5",
   },
 };
 
@@ -118,6 +123,9 @@ if (isProduction) {
     problems.push("APP_URL must be the public https origin of the app (e.g. https://originx.example.com, no trailing slash) — QR codes and email links use it");
   }
   if (!config.mail.secure && !config.mail.requireTls) problems.push("SMTP_REQUIRE_TLS must not be false in production");
+  if (Boolean(config.turnstile.siteKey) !== Boolean(config.turnstile.secretKey)) {
+    problems.push("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set together (or both left empty)");
+  }
   if (!config.mail.host || !config.mail.from) {
     problems.push("SMTP_HOST and MAIL_FROM must be set — password resets, email verification and invitations are delivered by email");
   }

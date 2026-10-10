@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { MailCheck } from "lucide-react";
 import { Alert, Button, Field, Input, buttonClass } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { AuthCard } from "./AuthLayout";
+import { Turnstile, useTurnstileSiteKey, type TurnstileHandle } from "@/components/Turnstile";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -11,16 +12,20 @@ export default function ForgotPassword() {
   const [sent, setSent] = useState<{ demoResetToken?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      setSent(await api.post<{ demoResetToken?: string }>("/auth/forgot-password", { email }, false));
+      setSent(await api.post<{ demoResetToken?: string }>("/auth/forgot-password", { email, turnstileToken: humanToken ?? undefined }, false));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setLoading(false);
+      humanCheck.current?.reset();
     }
   };
 
@@ -43,7 +48,8 @@ export default function ForgotPassword() {
         <form onSubmit={submit} className="space-y-5">
           {error && <Alert tone="bad">{error}</Alert>}
           <Field label="Email">{(id) => <Input id={id} type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
-          <Button type="submit" size="lg" className="w-full" loading={loading}>
+          <Turnstile ref={humanCheck} action="password_reset" onToken={setHumanToken} />
+          <Button type="submit" size="lg" className="w-full" loading={loading} disabled={Boolean(humanCheckKey) && !humanToken}>
             Send reset link
           </Button>
         </form>

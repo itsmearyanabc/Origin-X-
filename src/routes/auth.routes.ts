@@ -4,6 +4,7 @@ import { AppError, ok } from "../lib/errors.js";
 import { clientIpHash } from "../lib/http.js";
 import { requireAuth } from "../middleware/auth.js";
 import { authLimiter } from "../middleware/rateLimit.js";
+import { requireHuman } from "../middleware/turnstile.js";
 import { authService } from "../services/auth.service.js";
 
 /**
@@ -54,11 +55,11 @@ authRouter.post("/google", authLimiter, async (req, res) => {
 });
 
 
-authRouter.post("/register", authLimiter, async (req, res) => {
+authRouter.post("/register", authLimiter, requireHuman("signup"), async (req, res) => {
   sendSession(req, res, await authService.register(req.body, clientIpHash(req)), 201);
 });
 
-authRouter.post("/login", authLimiter, async (req, res) => {
+authRouter.post("/login", authLimiter, requireHuman("login"), async (req, res) => {
   sendSession(req, res, await authService.login(req.body, clientIpHash(req)));
 });
 
@@ -82,7 +83,7 @@ authRouter.post("/logout-all", requireAuth, async (req, res) => {
   res.json(ok(await authService.logout(refreshTokenFrom(req), req.user!.id, true)));
 });
 
-authRouter.post("/forgot-password", authLimiter, async (req, res) => {
+authRouter.post("/forgot-password", authLimiter, requireHuman("password_reset"), async (req, res) => {
   res.json(ok(await authService.requestPasswordReset(String(req.body?.email ?? ""))));
 });
 

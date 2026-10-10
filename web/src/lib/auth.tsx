@@ -14,9 +14,9 @@ type AuthContextValue = {
   activeOrg: Me["organizations"][number] | null;
   role: OrgRole | null;
   isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<Me>;
+  signIn: (email: string, password: string, turnstileToken?: string) => Promise<Me>;
   signInWithGoogle: (credential: string) => Promise<Me | null>;
-  signUp: (fullName: string, email: string, password: string) => Promise<Me>;
+  signUp: (fullName: string, email: string, password: string, turnstileToken?: string) => Promise<Me>;
   signOut: () => Promise<void>;
   reload: () => Promise<Me | null>;
   selectOrganization: (id: string) => void;
@@ -82,12 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signIn = useCallback(
-    async (email: string, password: string) => finishAuth(await api.post<AuthResult>("/auth/login", { email, password }, false)),
+    async (email: string, password: string, turnstileToken?: string) => finishAuth(await api.post<AuthResult>("/auth/login", { email, password, turnstileToken }, false)),
     [finishAuth],
   );
 
   const signUp = useCallback(
-    async (fullName: string, email: string, password: string) => finishAuth(await api.post<AuthResult>("/auth/register", { fullName, email, password }, false)),
+    async (fullName: string, email: string, password: string, turnstileToken?: string) => finishAuth(await api.post<AuthResult>("/auth/register", { fullName, email, password, turnstileToken }, false)),
     [finishAuth],
   );
 

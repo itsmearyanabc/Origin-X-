@@ -21,15 +21,15 @@ Browser / QR scan ──HTTPS──> Cloudflare (DNS proxy, TLS, WAF, rate rule)
    - **Session pooler / direct** (5432) → `DIRECT_URL` (append `?sslmode=require`)
 3. Nothing else: the container applies migrations on start. Migration `integrity_guards` enables RLS on every table and revokes Supabase API roles, so the auto-generated REST API exposes no ORIGINX data. Verify in Supabase → Advisors (no "RLS disabled" warnings).
 
-## 2. Blockchain (Polygon Amoy testnet)
-1. Create a **dedicated** wallet for anchoring (never a personal wallet). Fund it with test POL from a Polygon Amoy faucet.
-2. On your machine (key only in the shell environment):
+## 2. Blockchain (live: Ethereum Hoodi testnet)
+Live deployment: contract `0xc2Db7e9692F8048841A23Cf4CE6f3c5f313464b4` on Hoodi (chain 560048), source verified on Sourcify. Any EVM chain works the same way (Polygon Amoy, Sepolia, …) — only the `BLOCKCHAIN_*` values change.
+1. Use a **dedicated** wallet holding test funds only (0x-prefixed key in `BLOCKCHAIN_PRIVATE_KEY`; never a wallet with real money). Fund it with test ETH from the [Hoodi PoW faucet](https://hoodi-faucet.pk910.de). Sepolia's PoW faucet can't fund brand-new wallets (a first transfer needs ~207k gas there; the faucet sends 30k).
+2. Keep `BLOCKCHAIN_MODE=disabled` and deploy from inside the API image (checks the chain ID, refuses to redeploy, verifies owner/anchorer on-chain):
    ```bash
-   BLOCKCHAIN_RPC_URL=https://polygon-amoy.drpc.org BLOCKCHAIN_PRIVATE_KEY=0x... BLOCKCHAIN_NETWORK=polygon-amoy npm run chain:deploy
+   docker compose -f docker-compose.prod.yml run --rm api node dist/cli/deploy-contract.js
    ```
-   Copy `contractAddress` from the output into `.env.production`.
-3. Transactions are viewable at `https://amoy.polygonscan.com/tx/<hash>` (`BLOCKCHAIN_EXPLORER_TX_URL`).
-   `BLOCKCHAIN_ANCHOR_POLICY=critical` anchors registration, QA, custody, delivery, recall and status events (the hash chain covers the events in between).
+   Run the `sed` line it prints (sets `BLOCKCHAIN_CONTRACT_ADDRESS`, switches to `evm`), then `docker compose -f docker-compose.prod.yml up -d --force-recreate api`.
+3. `BLOCKCHAIN_ANCHOR_POLICY=critical` anchors registration, QA, custody, delivery, recall and status events (the hash chain covers the events in between). Proofs are confirmed by exactly one submitter: the background worker only retries proofs idle for longer than `BLOCKCHAIN_TX_TIMEOUT_MS` + 30 s, and confirmed proofs are never rewritten.
 
 ### 2a. Alternative: self-hosted private chain (no faucet, no money)
 Runs the same `OriginXProofAnchor` contract on an Anvil node inside the Docker stack (`chain` service, profile `private-chain`). It is reachable only by the API (no published ports) and its state is saved to the `originx-chain-data` volume every 10 s and on shutdown, so proofs survive restarts and redeploys. Proofs are real contract transactions, but nobody outside the server can check them on an explorer — use Amoy when public verifiability matters.
@@ -48,6 +48,15 @@ Password resets, email verification and team invitations are sent by email; the 
 2. Verify your sending domain with the provider and add its SPF / DKIM (and a DMARC) record in Cloudflare DNS (DNS only, not proxied).
 3. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (e.g. `ORIGINX <no-reply@your-domain.com>`) and optionally `MAIL_ADMIN_NOTIFY` (gets "organization awaiting approval" and contact-form alerts).
 4. After start, the log line `ORIGINX API started` shows `"email":{"configured":true,"ok":true}`; `ok:false` includes the SMTP error.
+
+### 2c. Accounts, email verification and bot protection
+- **Email verification** is a 6-digit code (10 min, single use, 5 wrong tries lock it, 60 s resend cooldown). Email sign-ups enter it before creating an organization; Google sign-ups are already verified by Google (only Google-verified addresses are accepted).
+- **Google Sign-In:** in Google Cloud → Credentials, the OAuth client must list `https://<your domain>` under *Authorized JavaScript origins*, and the OAuth consent screen must be **Published** (in "Testing" only listed test users can sign in).
+- **Cloudflare Turnstile** (free, no DNS move needed): Cloudflare dashboard → *Turnstile* → *Add widget* → hostname = your domain, widget mode *Managed* → put the site key and secret in `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`. Sign-in, sign-up, password reset and the contact form then require the check; tokens are verified server-side with Cloudflare (action- and hostname-bound). The web app reads the site key at runtime from `GET /api/v1/site/config`, so no rebuild is needed.
+- **Website chatbot:** a local keyword rule engine (no AI API key, no cost); answers only from ORIGINX-authored snippets, never echoes visitor text; rate-limited per visitor (`CHAT_RATE_LIMIT`, default 20 / 10 min), questions capped at 1000 characters.
+
+### 2d. Demo tenants for presentations
+`docker compose -f docker-compose.prod.yml run --rm -e SHOWCASE_PASSWORD='…' api node dist/cli/seed-showcase.js --confirm` creates six clearly labelled "(Demo)" organizations through the real services (verified lifecycle, recall, counterfeit collision, stock, shipments, sales, scans). It resumes safely if interrupted and prints all logins and verification links. Suspend the "(Demo)" organizations in the admin console when no longer needed.
 
 ## 3. Hostinger VPS (Ubuntu)
 ```bash
@@ -83,7 +92,8 @@ Compose does **not** read port interpolation values from the service's `.env.pro
 
 Configure a separate host-Nginx virtual host for the Origin X hostname, retaining its existing certificate/TLS setup, with `proxy_pass http://127.0.0.1:8080;` and the usual forwarded headers (`Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`). Validate the new config with `nginx -t` before reloading. Do not reuse another site's `server_name` or remove its config. Recreate the app with `ORIGINX_HTTP_BIND=127.0.0.1:8080 ORIGINX_HTTPS_BIND=127.0.0.1:8443 docker compose -f docker-compose.prod.yml up -d --build`, then check `curl -i http://127.0.0.1:8080/ready` and `curl -i https://<originx-hostname>/ready`; both should return 200. The HTTPS container listener is available on loopback port 8443 if a deployment specifically needs TLS between host Nginx and the container.
 
-## 4. Cloudflare (free plan)
+## 4. Cloudflare proxy (optional, free plan)
+Turnstile (2c) works without this. Proxying the whole domain through Cloudflare adds DDoS protection and a WAF, but moves DNS for the entire domain: import **every** existing record first (MX/SPF/DMARC for mail, the Resend `send`/`rsend`/`resend._domainkey` records, other sites' A records) and keep mail records *DNS only* (grey cloud). After switching, set `BEHIND_CLOUDFLARE: "true"` only once the origin firewall admits Cloudflare's IP ranges only.
 1. Add the domain; DNS `A @ → <VPS IP>` (and `www` if wanted), **Proxied** (orange cloud). The web app and API share this origin (`https://your-domain.com`, API under `/api/v1`); set `APP_URL=https://your-domain.com` (QR codes point to `APP_URL/verify/<token>`) and `CORS_ORIGINS` to the same origin.
 2. SSL/TLS → **Full (strict)**; Edge Certificates → Always Use HTTPS, min TLS 1.2.
 3. SSL/TLS → Origin Server → create certificate → save as `deploy/certs/origin.pem` / `origin.key`.

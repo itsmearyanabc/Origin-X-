@@ -20,6 +20,9 @@ export const authLimiter = limiter(15 * 60_000, Number(process.env.AUTH_RATE_LIM
 /** Public consumer verification. */
 export const verifyLimiter = limiter(60_000, Number(process.env.VERIFY_RATE_LIMIT ?? 30), "Too many verification requests. Try again shortly.");
 
+/** Public website chatbot: each message costs an AI call, so keep it tight per client. */
+export const chatLimiter = limiter(10 * 60_000, Number(process.env.CHAT_RATE_LIMIT ?? 20), "Too many questions. Please try again in a few minutes.");
+
 /** Public contact form: a handful of messages per client per hour. */
 export const contactLimiter = limiter(60 * 60_000, Number(process.env.CONTACT_RATE_LIMIT ?? 5), "Too many messages. Please try again later.");
 

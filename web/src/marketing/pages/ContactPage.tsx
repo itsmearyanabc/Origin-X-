@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import { CheckCircle2, Mail, MessageSquare, ShieldCheck } from "lucide-react";
 import { Alert, Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { PageHero } from "./PageHero";
+import { Turnstile, useTurnstileSiteKey, type TurnstileHandle } from "@/components/Turnstile";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
@@ -23,14 +24,19 @@ export default function ContactPage() {
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState, reset } = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { topic: "GENERAL" } });
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      const res = await api.public<{ reference: string }>("POST", "/site/contact", values);
+      const res = await api.public<{ reference: string }>("POST", "/site/contact", { ...values, turnstileToken: humanToken ?? undefined });
       setReference(res.reference);
       reset();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      humanCheck.current?.reset();
     }
   });
 
@@ -100,7 +106,8 @@ export default function ContactPage() {
                 <p className="text-xs text-ink-500">
                   We use your details only to reply. See our <a href="/privacy" className="font-semibold text-brand-600 hover:underline">privacy policy</a>.
                 </p>
-                <Button type="submit" size="lg" loading={formState.isSubmitting} className="w-full sm:w-auto">
+                <Turnstile ref={humanCheck} action="contact" onToken={setHumanToken} className="sm:flex sm:justify-start" />
+                <Button type="submit" size="lg" loading={formState.isSubmitting} disabled={Boolean(humanCheckKey) && !humanToken} className="w-full sm:w-auto">
                   Send message
                 </Button>
               </form>

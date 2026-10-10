@@ -28,7 +28,9 @@ export default function ChatWidget() {
         body: JSON.stringify({ message: userMsg }),
       });
       const json = await res.json();
-      setMessages(prev => [...prev, { role: "bot", html: json.data?.reply || json.error || "Error" }]);
+      // Replies arrive already sanitized by the server; error messages are plain text, so escape them.
+      const escape = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      setMessages(prev => [...prev, { role: "bot", html: json.data?.reply || escape(json.error?.message || "Sorry, something went wrong. Please try again.") }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: "bot", html: "Connection error." }]);
     } finally {

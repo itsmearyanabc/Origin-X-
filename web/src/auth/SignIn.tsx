@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AuthCard } from "./AuthLayout";
 import { PasswordInput } from "./PasswordInput";
+import { Turnstile, useTurnstileSiteKey, type TurnstileHandle } from "@/components/Turnstile";
 
 const schema = z.object({ email: z.string().trim().email("Enter a valid email."), password: z.string().min(1, "Enter your password.") });
 
@@ -42,13 +43,18 @@ export default function SignIn() {
     }
   };
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setError(null);
     try {
-      const user = await signIn(email, password);
+      const user = await signIn(email, password, humanToken ?? undefined);
       navigate(next ?? homeFor(user), { replace: true });
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      humanCheck.current?.reset(); // tokens are single-use
     }
   });
 
@@ -94,7 +100,8 @@ export default function SignIn() {
             Forgot password?
           </Link>
         </div>
-        <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting}>
+        <Turnstile ref={humanCheck} action="login" onToken={setHumanToken} />
+        <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} disabled={Boolean(humanCheckKey) && !humanToken}>
           Sign in <ArrowRight className="h-4 w-4" />
         </Button>
       </form>

@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth";
 import { AuthCard } from "./AuthLayout";
 import { PasswordInput, PasswordStrength, passwordRule } from "./PasswordInput";
 import { safeNext } from "./SignIn";
+import { Turnstile, useTurnstileSiteKey, type TurnstileHandle } from "@/components/Turnstile";
 
 const schema = z.object({
   fullName: z.string().trim().min(2, "Enter your full name."),
@@ -77,14 +78,19 @@ export default function SignUp() {
     }
   };
 
+  const { siteKey: humanCheckKey } = useTurnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const humanCheck = useRef<TurnstileHandle>(null);
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     try {
-      await signUp(v.fullName, v.email, v.password);
+      await signUp(v.fullName, v.email, v.password, humanToken ?? undefined);
       // Email sign-ups confirm their address with the 6-digit code we just emailed.
       navigate(`/verify-email?next=${encodeURIComponent(next ?? "/onboarding")}`, { replace: true });
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      humanCheck.current?.reset();
     }
   });
 
@@ -138,7 +144,8 @@ export default function SignUp() {
               </span>
             </label>
             {formState.errors.terms && <p className="-mt-3 text-xs font-medium text-bad-600">{formState.errors.terms.message}</p>}
-            <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting}>
+            <Turnstile ref={humanCheck} action="signup" onToken={setHumanToken} />
+            <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} disabled={Boolean(humanCheckKey) && !humanToken}>
               Create account <ArrowRight className="h-4 w-4" />
             </Button>
 

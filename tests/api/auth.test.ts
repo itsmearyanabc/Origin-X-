@@ -155,6 +155,16 @@ describe("authentication", () => {
     expect((await api().post("/api/v1/auth/refresh").set("Cookie", rotated).set("X-Requested-With", "originx-web")).status).toBe(401);
   });
 
+  it("website chatbot validates input and answers from its local rules", async () => {
+    expect((await api().post("/api/v1/site/chat").send({})).status).toBe(422);
+    expect((await api().post("/api/v1/site/chat").send({ message: "x".repeat(1001) })).status).toBe(422);
+    const pricing = await api().post("/api/v1/site/chat").send({ message: "How much does it cost?" });
+    expect(pricing.status).toBe(200);
+    expect(pricing.body.data.reply).toContain("Pricing");
+    const offTopic = await api().post("/api/v1/site/chat").send({ message: "Tell me a joke <img src=x onerror=alert(1)>" });
+    expect(offTopic.body.data.reply).toBe("I do not have a response for this , you can ask ur doubts about the origin x");
+  });
+
   it("accepts website contact messages with validation and a honeypot", async () => {
     const ok = await api().post("/api/v1/site/contact").set("CF-Connecting-IP", "198.51.100.200").send({ name: "Dana", email: "dana@example.com", topic: "SALES", message: "We would like a demo for 40 SKUs." });
     expect(ok.status).toBe(201);
