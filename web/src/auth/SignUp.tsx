@@ -141,7 +141,7 @@ export default function SignUp() {
               Create account <ArrowRight className="h-4 w-4" />
             </Button>
 
-            <GoogleOAuthProvider clientId="402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com">
+            <GoogleOAuthProvider clientId="402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com">
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
                 <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Or continue with</span></div>

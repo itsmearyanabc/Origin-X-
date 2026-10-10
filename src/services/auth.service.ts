@@ -74,11 +74,11 @@ export class AuthService {
    */
   
   async loginWithGoogle(token: string, ipHash?: string | null) {
-    const client = new OAuth2Client("402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com");
+    const client = new OAuth2Client("402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com");
     try {
       const ticket = await client.verifyIdToken({
         idToken: token,
-        audience: "402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com",
+        audience: "402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com",
       });
       const payload = ticket.getPayload();
       if (!payload || !payload.email) throw new Error("Invalid Google token payload");

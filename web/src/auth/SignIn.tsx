@@ -67,7 +67,7 @@ export default function SignIn() {
     >
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
 
-        <GoogleOAuthProvider clientId="402692437838-5skvqif41a71q15bu1ua3o432ntk1phu.apps.googleusercontent.com">
+        <GoogleOAuthProvider clientId="402692437838-h7uhhn5i1h4gfep3afig79ce2et0ksan.apps.googleusercontent.com">
           <div className="mt-4 flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
