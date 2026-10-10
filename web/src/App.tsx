@@ -40,6 +40,7 @@ const Team = lazy(() => import("@/app/pages/Team"));
 const Settings = lazy(() => import("@/app/pages/Settings"));
 const AuditLog = lazy(() => import("@/app/pages/AuditLog"));
 const InventoryOverview = lazy(() => import("@/app/inventory/InventoryOverview"));
+const SalesMonitoring = lazy(() => import("@/app/inventory/SalesMonitoring"));
 const ProductInventory = lazy(() => import("@/app/inventory/ProductInventory"));
 const SkuDetail = lazy(() => import("@/app/inventory/ProductInventory").then((m) => ({ default: m.SkuDetail })));
 const Movements = lazy(() => import("@/app/inventory/Movements"));
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="inventory" element={<InventoryOverview />} />
+          <Route path="inventory/sales" element={<SalesMonitoring />} />
           <Route path="inventory/products" element={<ProductInventory />} />
           <Route path="inventory/products/:skuId" element={<SkuDetail />} />
           <Route path="inventory/movements" element={<Movements />} />

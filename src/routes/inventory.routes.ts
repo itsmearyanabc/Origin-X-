@@ -74,6 +74,9 @@ inventoryRouter.patch("/locations/:id", can("warehouses:manage"), async (req, re
 inventoryRouter.get("/inventory/summary", can("inventory:read"), async (req, res) => {
   res.json(ok(await inventoryService.summary(tenantId(req))));
 });
+inventoryRouter.get("/inventory/sales-monitoring", can("inventory:read"), async (req, res) => {
+  res.json(ok(await inventoryService.salesMonitoring(tenantId(req), query(req))));
+});
 inventoryRouter.get("/inventory/products", can("inventory:read"), async (req, res) => {
   res.json(ok(await inventoryService.productInventory(tenantId(req), query(req))));
 });

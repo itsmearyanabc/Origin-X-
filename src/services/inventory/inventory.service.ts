@@ -147,6 +147,107 @@ export class InventoryService {
     };
   }
 
+  /**
+   * Sales activity is derived only from completed external dispatch movements.
+   * ORIGINX does not store order prices, so this deliberately reports quantities
+   * and dispatch counts rather than inventing revenue.
+   */
+  async salesMonitoring(organizationId: string, q: Query) {
+    const requestedPeriod = str(q, "period") ?? "30d";
+    const periods = {
+      "7d": { days: 7, bucket: "day" },
+      "30d": { days: 30, bucket: "day" },
+      "90d": { days: 90, bucket: "week" },
+      "12m": { days: 365, bucket: "month" },
+    } as const;
+    if (!(requestedPeriod in periods)) throw new AppError("INVALID_PERIOD", "Choose a supported sales period.", 400);
+    const period = periods[requestedPeriod as keyof typeof periods];
+    const to = new Date();
+    const from = new Date(to.getTime() - period.days * 24 * 60 * 60 * 1000);
+    const previousFrom = new Date(from.getTime() - period.days * 24 * 60 * 60 * 1000);
+    const currentWhere: Prisma.InventoryTransactionWhereInput = {
+      organizationId,
+      type: "DISPATCH",
+      status: "COMPLETED",
+      shipmentId: null,
+      createdAt: { gte: from, lt: to },
+    };
+    const previousWhere: Prisma.InventoryTransactionWhereInput = {
+      ...currentWhere,
+      createdAt: { gte: previousFrom, lt: from },
+    };
+
+    const [trendRows, currentBySku, currentByUnit, previousByUnit] = await Promise.all([
+      prisma.$queryRaw<Array<{ period: Date; unitOfMeasure: string; quantity: string; dispatches: number }>>(Prisma.sql`
+        SELECT date_trunc(${period.bucket}, "createdAt") AS "period",
+               "unitOfMeasure",
+               SUM("quantity")::text AS "quantity",
+               COUNT(*)::int AS "dispatches"
+        FROM "InventoryTransaction"
+        WHERE "organizationId" = ${organizationId}
+          AND "type" = 'DISPATCH'
+          AND "status" = 'COMPLETED'
+          AND "shipmentId" IS NULL
+          AND "createdAt" >= ${from}
+          AND "createdAt" < ${to}
+        GROUP BY 1, 2
+        ORDER BY 1 ASC
+      `),
+      prisma.inventoryTransaction.groupBy({
+        by: ["skuId", "unitOfMeasure"],
+        where: currentWhere,
+        _sum: { quantity: true },
+        _count: { _all: true },
+      }),
+      prisma.inventoryTransaction.groupBy({
+        by: ["unitOfMeasure"],
+        where: currentWhere,
+        _sum: { quantity: true },
+        _count: { _all: true },
+      }),
+      prisma.inventoryTransaction.groupBy({
+        by: ["unitOfMeasure"],
+        where: previousWhere,
+        _sum: { quantity: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const topRows = [...currentBySku].sort((a, b) =>
+      (b._sum.quantity ?? new Prisma.Decimal(0)).comparedTo(a._sum.quantity ?? new Prisma.Decimal(0)),
+    ).slice(0, 8);
+    const skus = await prisma.productSku.findMany({
+      where: { organizationId, id: { in: topRows.map((row) => row.skuId) } },
+      select: { id: true, sku: true, name: true },
+    });
+    const skuMap = new Map(skus.map((sku) => [sku.id, sku]));
+    const mapUnit = (row: (typeof currentByUnit)[number]) => ({
+      unitOfMeasure: row.unitOfMeasure,
+      quantity: (row._sum.quantity ?? new Prisma.Decimal(0)).toString(),
+      dispatches: row._count._all,
+    });
+
+    return {
+      period: requestedPeriod,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      previousFrom: previousFrom.toISOString(),
+      trend: trendRows.map((row) => ({ ...row, period: row.period.toISOString(), dispatches: Number(row.dispatches) })),
+      totalsByUnit: currentByUnit.map(mapUnit),
+      previousTotalsByUnit: previousByUnit.map(mapUnit),
+      dispatches: currentByUnit.reduce((total, row) => total + row._count._all, 0),
+      uniqueProducts: currentBySku.length,
+      topProducts: topRows.map((row) => ({
+        skuId: row.skuId,
+        sku: skuMap.get(row.skuId)?.sku ?? "—",
+        name: skuMap.get(row.skuId)?.name ?? "Unknown product",
+        unitOfMeasure: row.unitOfMeasure,
+        quantity: (row._sum.quantity ?? new Prisma.Decimal(0)).toString(),
+        dispatches: row._count._all,
+      })),
+    };
+  }
+
   async transactions(organizationId: string, q: Query) {
     const from = str(q, "from");
     const to = str(q, "to");

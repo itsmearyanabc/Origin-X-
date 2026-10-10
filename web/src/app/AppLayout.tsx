@@ -10,6 +10,7 @@ import {
   ChevronsUpDown,
   ClipboardList,
   Clock,
+  TrendingUp,
   Handshake,
   History,
   LayoutDashboard,
@@ -170,6 +171,7 @@ export default function AppLayout() {
       label: "Inventory",
       items: [
         { to: "/app/inventory", label: "Inventory overview", icon: Warehouse, end: true },
+        { to: "/app/inventory/sales", label: "Sales monitor", icon: TrendingUp },
         { to: "/app/inventory/products", label: "Stock by product", icon: PackageSearch },
         { to: "/app/warehouses", label: "Warehouses", icon: WarehouseIcon },
         { to: "/app/shipments", label: "Shipments", icon: Truck, badge: incomingShipments.data?.meta.total || null },

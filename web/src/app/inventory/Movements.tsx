@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { History, PackagePlus } from "lucide-react";
+import { useSearchParams } from "react-router";
 import { Button, Card, EmptyState, ErrorState, Input, PageHeader, Pagination, Select, Skeleton, Table } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
@@ -13,9 +14,10 @@ const TYPES = ["OPENING_BALANCE", "RECEIPT", "DISPATCH", "TRANSFER_OUT", "TRANSF
 
 export default function Movements() {
   const can = useCan();
-  const [filters, setFilters] = useState({ type: "", skuId: "", warehouseId: "", from: "", to: "" });
+  const [params] = useSearchParams();
+  const [filters, setFilters] = useState(() => ({ type: params.get("type") === "DISPATCH" ? "DISPATCH" : "", skuId: "", warehouseId: "", from: "", to: "" }));
   const [page, setPage] = useState(1);
-  const [moving, setMoving] = useState(false);
+  const [moving, setMoving] = useState(() => params.get("new") === "dispatch");
   const skus = useSkus();
   const warehouses = useWarehouses();
   const list = useOrgQuery(["inventory", "transactions", filters, page], () =>
@@ -82,7 +84,7 @@ export default function Movements() {
           <EmptyState icon={<History className="h-5 w-5" />} title="No movements match" />
         )}
       </Card>
-      <MovementModal open={moving} onClose={() => setMoving(false)} />
+      <MovementModal open={moving} onClose={() => setMoving(false)} defaults={{ type: params.get("type") === "DISPATCH" ? "DISPATCH" : undefined }} />
     </>
   );
 }
