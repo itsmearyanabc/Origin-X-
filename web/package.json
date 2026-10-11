@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "lenis": "^1.3.4",
     "lucide-react": "^0.515.0",
+    "maplibre-gl": "6.11.2",
     "motion": "^12.18.1",
     "qr-scanner": "^1.4.2",
     "react": "^19.1.0",

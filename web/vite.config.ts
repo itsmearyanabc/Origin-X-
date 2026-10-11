@@ -12,6 +12,8 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": { target: "http://localhost:4000", changeOrigin: false } },
   },
+  // MapLibre's worker imports a shared chunk, so bundle it as an ES module worker (see WarehouseMap).
+  worker: { format: "es" },
   build: {
     target: "es2022",
     sourcemap: false,
