@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import { homeFor } from "@/components/guards";
-import { errorMessage } from "@/lib/api";
+import { ApiError, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AuthCard } from "./AuthLayout";
 import { PasswordInput } from "./PasswordInput";
@@ -18,6 +18,14 @@ const schema = z.object({ email: z.string().trim().email("Enter a valid email.")
 /** Only allow in-app redirects (prevents open redirects via ?next=). */
 export function safeNext(next: string | null) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+}
+
+/** 75 → "1:15", 4800 → "1:20:00". */
+function clock(seconds: number) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = String(seconds % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
 export default function SignIn() {
@@ -31,6 +39,22 @@ export default function SignIn() {
   const { siteKey: humanCheckKey } = useTurnstileSiteKey();
   const [humanToken, setHumanToken] = useState<string | null>(null);
   const humanCheck = useRef<TurnstileHandle>(null);
+
+  // Brute-force lockout: the server pauses sign-in after repeated wrong passwords (30 s, 1 min,
+  // 5 min, …). Count the pause down live and keep the button disabled until it ends.
+  const [pausedUntil, setPausedUntil] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!pausedUntil) return;
+    const timer = setInterval(() => {
+      if (Date.now() >= pausedUntil) {
+        setPausedUntil(null);
+        setError(null);
+      } else setTick((n) => n + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [pausedUntil]);
+  const pauseLeft = pausedUntil ? Math.max(0, Math.ceil((pausedUntil - Date.now()) / 1000)) : 0;
 
   if (status === "authenticated" && me) return <Navigate to={next ?? homeFor(me)} replace />;
 
@@ -53,6 +77,8 @@ export default function SignIn() {
       const user = await signIn(email, password, humanToken ?? undefined);
       navigate(next ?? homeFor(user), { replace: true });
     } catch (e) {
+      const wait = e instanceof ApiError && e.code === "LOGIN_LOCKED" ? (e.details as { retryAfterSeconds?: number } | undefined)?.retryAfterSeconds : undefined;
+      if (wait) setPausedUntil(Date.now() + wait * 1000);
       setError(errorMessage(e));
     } finally {
       humanCheck.current?.reset(); // tokens are single-use
@@ -89,7 +115,14 @@ export default function SignIn() {
           <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Or continue with</span></div>
         </div>
 
-        {error && <Alert tone="bad">{error}</Alert>}
+        {pauseLeft > 0 ? (
+          <Alert tone="bad">
+            Too many failed sign-in attempts. You can try again in <span className="font-mono font-semibold">{clock(pauseLeft)}</span>. Forgot your password?{" "}
+            <Link to="/forgot-password" className="font-semibold underline">Reset it</Link> to sign in right away.
+          </Alert>
+        ) : (
+          error && <Alert tone="bad">{error}</Alert>
+        )}
         <Field label="Email" error={formState.errors.email?.message}>
           {(id) => <Input id={id} type="email" autoComplete="email" autoFocus aria-invalid={Boolean(formState.errors.email)} {...register("email")} />}
         </Field>
@@ -102,8 +135,8 @@ export default function SignIn() {
           </Link>
         </div>
         <Turnstile ref={humanCheck} action="login" onToken={setHumanToken} />
-        <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} disabled={Boolean(humanCheckKey) && !humanToken}>
-          Sign in <ArrowRight className="h-4 w-4" />
+        <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} disabled={pauseLeft > 0 || (Boolean(humanCheckKey) && !humanToken)}>
+          {pauseLeft > 0 ? `Try again in ${clock(pauseLeft)}` : <>Sign in <ArrowRight className="h-4 w-4" /></>}
         </Button>
       </form>
     </AuthCard>

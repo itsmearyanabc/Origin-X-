@@ -11,7 +11,7 @@
 | Counterfeit registration (cloned identity) | Organization-independent identity hash; on-chain write-once identity registry; quarantine + incidents; claimant learns nothing about the victim. |
 | Cloned QR codes on fake packaging | Distinct-scanner anomaly detection → SUSPICIOUS + incident. |
 | Token enumeration on the public endpoint | 192-bit random tokens; format check before DB; per-IP limiter; unknown-token lockout; `no-store`. |
-| Credential stuffing / brute force | Auth rate limiter, constant-time-ish login (dummy bcrypt for unknown users), uniform errors, Cloudflare rules. |
+| Credential stuffing / brute force | Progressive per-email sign-in lockout (5 wrong → 30 s, 3 → 1 min, 1 → 5 min, 1 → 10 min, then doubling to 24 h; stored in the database, attempts counted before the password check, unknown emails treated identically, cleared by a correct password or a password reset), Cloudflare Turnstile, auth rate limiter, constant-time-ish login (dummy bcrypt for unknown users), uniform errors. |
 | Stolen refresh token | Rotation with family revocation on reuse; `sessionVersion` revokes all access tokens. |
 | Recalled product shown as safe | Public state precedence: RECALLED is never reported as verified; trust note explains score ≠ safety. |
 | Faked blockchain proofs | Only real tx hashes are stored; verification re-reads contract state and receipts. |

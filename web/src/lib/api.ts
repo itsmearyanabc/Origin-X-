@@ -4,7 +4,8 @@
  * - Refresh token is an httpOnly cookie; refresh calls send X-Requested-With (CSRF guard).
  * - A 401 triggers one shared refresh, then the request is retried once.
  */
-export type ApiErrorBody = { code: string; message: string; details?: Array<{ path: string; message: string }> };
+// `details` varies by error: validation issues ({ path, message }[]), Cloudflare codes (string[]), or an object such as { retryAfterSeconds }.
+export type ApiErrorBody = { code: string; message: string; details?: unknown };
 
 export class ApiError extends Error {
   constructor(
@@ -118,7 +119,8 @@ export const api = {
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.details?.length) return error.details.map((d) => (d.path ? `${d.path}: ${d.message}` : d.message)).join(" · ");
+    const issues = Array.isArray(error.details) ? error.details.filter((d): d is { path?: string; message: string } => typeof d?.message === "string") : [];
+    if (issues.length) return issues.map((d) => (d.path ? `${d.path}: ${d.message}` : d.message)).join(" · ");
     return error.message;
   }
   return "Something went wrong. Please try again.";

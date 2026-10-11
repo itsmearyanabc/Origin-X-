@@ -10,6 +10,8 @@ import { isProduction, isTest } from "../config.js";
  */
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (err instanceof AppError) {
+    const retryAfter = (err.details as { retryAfterSeconds?: unknown } | undefined)?.retryAfterSeconds;
+    if (typeof retryAfter === "number") res.setHeader("Retry-After", String(retryAfter));
     return res.status(err.status).json(fail(err.code, err.message, err.details));
   }
   if (err instanceof ZodError) {

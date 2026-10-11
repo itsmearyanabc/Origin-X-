@@ -64,6 +64,18 @@ model RefreshToken {
   @@index([familyId])
 }
 
+/// Progressive sign-in lockout (src/services/login-throttle.service.ts). Keyed by a hash of the
+/// normalized email — also for emails with no account, so lockouts reveal nothing.
+model LoginThrottle {
+  keyHash      String    @id
+  stage        Int       @default(0) // lockouts so far in this streak
+  failures     Int       @default(0) // wrong (or in-flight) attempts since the last lockout
+  lockedUntil  DateTime?
+  lastFailedAt DateTime  @default(now())
+
+  @@index([lastFailedAt])
+}
+
 /// Password-reset and email-verification tokens (only hashes are stored).
 model OneTimeToken {
   id        String    @id @default(cuid())

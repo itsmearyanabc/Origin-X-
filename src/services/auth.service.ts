@@ -8,6 +8,7 @@ import { prisma } from "../lib/prisma.js";
 import { writeAudit } from "./audit.service.js";
 import { isPlatformAdmin } from "../middleware/auth.js";
 import { mailService } from "./mail.service.js";
+import { humanDuration, loginThrottle } from "./login-throttle.service.js";
 
 const password = z
   .string()
@@ -64,12 +65,20 @@ export class AuthService {
 
   async login(input: unknown, ipHash?: string | null) {
     const data = loginSchema.parse(input);
+    await loginThrottle.reserve(data.email); // brute-force lockout: counts this attempt or throws LOGIN_LOCKED
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     const matches = await verifyPassword(data.password, user?.passwordHash ?? (await getDummyHash()));
     if (!user || !matches) {
       await writeAudit({ actorUserId: user?.id ?? null, action: "LOGIN_FAILED", resourceType: "User", resourceId: user?.id ?? null, ipHash });
-      throw new AppError("INVALID_CREDENTIALS", "Email or password is incorrect.", 401);
+      const { attemptsLeft, pauseSeconds, locked } = await loginThrottle.failed(data.email);
+      if (locked) {
+        await writeAudit({ actorUserId: user?.id ?? null, action: "LOGIN_LOCKED", resourceType: "User", resourceId: user?.id ?? null, ipHash, metadata: locked.details });
+        throw locked;
+      }
+      // Same wording for unknown emails, so this reveals nothing about which accounts exist.
+      throw new AppError("INVALID_CREDENTIALS", `Email or password is incorrect. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left before sign-in is paused for ${humanDuration(pauseSeconds)}.`, 401, { attemptsLeft });
     }
+    await loginThrottle.clear(data.email);
     if (user.status !== "ACTIVE") throw new AppError("ACCOUNT_INACTIVE", "This account is not active.", 403);
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     await writeAudit({ actorUserId: user.id, action: "USER_LOGIN", resourceType: "User", resourceId: user.id, ipHash });
@@ -165,13 +174,14 @@ export class AuthService {
   async resetPassword(token: string, newPassword: string) {
     const parsed = password.parse(newPassword);
     const stored = await this.consumeOneTimeToken(token, "PASSWORD_RESET");
-    await prisma.$transaction([
+    const [user] = await prisma.$transaction([
       prisma.user.update({
         where: { id: stored.userId },
         data: { passwordHash: await hashPassword(parsed), sessionVersion: { increment: 1 } },
       }),
       prisma.refreshToken.updateMany({ where: { userId: stored.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
+    await loginThrottle.clear(user.email); // the owner proved control of the inbox: lift any sign-in lockout
     await writeAudit({ actorUserId: stored.userId, action: "PASSWORD_RESET", resourceType: "User", resourceId: stored.userId });
     return { reset: true };
   }
